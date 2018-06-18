@@ -1,0 +1,30 @@
+{
+    "project_info": {
+        "name": "myProject",
+        "description": "My project",
+        "license": "MIT",
+        "url": ""
+    },
+    
+    "project_authors": [
+       {
+        "name": "",
+        "url": "",
+        "email": ""
+       }
+    ],
+    
+    "project_vcs": {
+        "code_repository": "",
+        "docker_repository": "",
+        "pypi_repository": "",
+        "project_version": "0.0.1"
+    },
+
+    "projects_requirements": {
+        "python_version": ">=3.4, <4",
+        "python_packages": []
+    }
+    
+}
+

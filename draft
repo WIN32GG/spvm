@@ -1,0 +1,43 @@
+not pyver
+not pvc
+pypm
+
+Versioning system
+Use pip for dependencies
+Use git for code management
+custom commands with args?
+
+file? setup.py?
+
+version held in projname/__version__.py
+
+docker handling in /docker
+Dockerfile template
+
+wget https://bootstrap.pypa.io/get-pip.py
+
+COMMAND EXAMPLE
+pypm init myproject		Init the clean pyvs project in subdirectory
+pypm init
+
+pypm install			    Install the dependencies locally
+pypm test			        Run the tests (in docker?)
+pypm patch major minor		Run tests, build update version, commit, push to git and docker repo
+pypm build			        Build the wheel		
+pypm blind 			        Do not run test, just build the wheel and push, without increasing the verison
+pypm publish                test, build and push to pypi and git repo (& docker if specified)
+pypm add                    Add a dependency from PyPi (default) to the project
+pypm docker                 Enable docker support
+
+.pypm
+NAME = 'mypackage'
+DESCRIPTION = 'My short description for my project.'
+URL = 'https://github.com/me/myproject'
+EMAIL = 'me@example.com'
+AUTHOR = 'TheAuthor1234'
+REQUIRES_PYTHON = '>=3.6.0'
+LICENSE = 'CC0'
+
+SCRIPTS = {
+    "showdiff": "git diff"
+}
