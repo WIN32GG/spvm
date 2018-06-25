@@ -111,10 +111,20 @@ def release(kind, projectname):
 
 
 @cli.command()
+@click.argument('targets', default="git,pypi,docker")
 @click.argument('projectname', default=".")
-def build(projectname):
-    """ Build the project """
-    pass
+def publish(targets, projectname):
+    """
+    Publish the project to the specified targets
+    Namely, git, pypi and docker
+    By defualt it wil try to publish to the 3
+    I you only want a git and pypi publication for instance, use spvm publish git,pypi
+    """
+    tgts = targets.split(',')
+    get_project(projectname).publish(
+        git='git' in tgts,
+        pypi='pypi' in tgts,
+        docker='docker' in tgts)
 
 
 @cli.command()

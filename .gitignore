@@ -8,3 +8,5 @@ splogger
 draft
 
 spvm\.egg-info/
+
+build/

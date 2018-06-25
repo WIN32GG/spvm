@@ -4,20 +4,24 @@ import sys
 import os
 
 
-def call_with_stdout(args, ignore_err=False):
-    with Popen(args.split(' ') if type(args) == str else args, stdout=PIPE) as proc:
+def call_with_stdout(args, ignore_err=False, stdout=PIPE):
+    with Popen(args.split(' ') if type(args) == str else args, stdout=stdout) as proc:
         out, err = proc.communicate()
         if proc.poll() != 0 and not ignore_err:
             log.error('Error from subprocess')
-            print(err, file=sys.stderr)
-            print(out, file=sys.stderr)
+            if err is not None and err != '':
+                print('err: ' + str(err), file=sys.stderr)
+            if out is not None and out != '':
+                print('out: ' + str(out), file=sys.stderr)
             raise CalledProcessError(proc.poll(), args)
-        return out.decode()
+        if out is not None:
+            return out.decode()
 
 
-def call_python(module, args):
+def call_python(module, args, stdout=None):
     mod = [] if module == '' else ['-m', module]
-    return check_call([sys.executable, *mod, *args.split(' ')])
+    return call_with_stdout(
+        [sys.executable, *mod, *args.split(' ')], stdout=stdout)
 
 
 def copy(a, b):
@@ -45,7 +49,7 @@ def call_git(args):
 @log.element('Commiting')
 def call_commit(message):
     return call_with_stdout(
-        ['git', 'commit', '--no-edit', '-m',  message])
+        ['git', 'commit', '--no-edit', '-m', message])
 
 
 def call_gpg(args):

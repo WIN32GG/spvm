@@ -3,7 +3,7 @@
         "name": "spvm",
         "description": "Simple Python Versioning Manager",
         "license": "MIT",
-        "url": ""
+        "url": "https://github.com/win32gg/spvm"
     },
     "project_authors": [
         {
@@ -22,7 +22,7 @@
         "release": {
             "commit_template": "Inscreased version to %s",
             "tag_template": "v%s",
-            "package_signing_key": ""
+            "package_signing_key": "649472416EF7C17160678B3B0E6469000F5EF8DB"
         }
     },
     "project_requirements": {

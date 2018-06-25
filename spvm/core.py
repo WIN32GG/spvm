@@ -4,6 +4,7 @@ from os.path import join
 import json
 from colorama import Fore
 import urllib.request
+import subprocess
 from subprocess import CalledProcessError
 import spvm
 from time import sleep
@@ -301,20 +302,16 @@ class PYVSProject(object):
     def repair(self):
         ioutils.call_python('autopep8', '-ra --in-place .')
 
-    @log.element('Building')
+    @log.element('Building', log_entry=True)
     def build(self):
         log.success('Building package in ./build')
         try:
-            log.capture_std_outputs()
             ioutils.call_python(
-                '', 'setup.py sdist -d build/dist bdist_wheel -d build/bdist  --universal')
+                '', 'setup.py sdist -d build/dist bdist_wheel -d build/bdist --universal', stdout=subprocess.PIPE)
         except CalledProcessError as ex:
             log.error('Unable to build the package')
             log.error(repr(ex))
             exit(1)
-        finally:
-            log.capture_std_outputs(False)
-        log.success('OK')
 
     @log.element('Cleaning up', log_entry=True)
     def clear_build(self):
@@ -322,7 +319,7 @@ class PYVSProject(object):
         log.error('Not implemented: clear')
 
     @log.element('Publishing')
-    def publish(self, git=True, pypi=True, docker=True):
+    def publish(self, git=False, pypi=True, docker=True):
         if git:
             self._release_git()
         if pypi:
@@ -354,48 +351,54 @@ class PYVSProject(object):
         self.build()
         if sign:
             self._sign_package()
+
+        # Upload
+
         self.clear_build()
 
+    @log.element('Package Signing')
     def _sign_package(self):
         """
         Add the signatures to the package before upload
         """
-
         meta_key = self.meta['project_vcs']['release']['package_signing_key']
-        key = 'default key' if meta_key == '' else meta_key
-        log.success('Signing the package with the key: ' + key)
+        if meta_key == '':
+            log.error(Fore.RED +
+                      config.OPEN_PADLOCK +
+                      ' No key provided for package signing' +
+                      Fore.RESET)
+            return
+
+        log.success('Signing the package with the key: ' + meta_key)
 
         try:
-            for place in os.walk(join(self.location, 'build', 'bdist')):
+            for place in os.walk(join('.', 'build', 'bdist')):
                 for f in place[2]:
-                    self._sign_file(f, meta_key)
+                    self._sign_file(join(place[0], f), meta_key)
         except CalledProcessError as ex:
             log.error(
                 Fore.RED +
                 config.OPEN_PADLOCK +
                 ' Could not sign the package' +
                 Fore.RESET)
-            # TODO check if abort
+            log.error(
+                'The program will now stop, you can resume with: spvm publish pypi')
+            log.error('When the issues are fixed')
             log.error(repr(ex))
+            exit(1)
             return
 
         log.success(
             Fore.GREEN +
             config.PADLOCK +
             ' Package Signed with key: ' +
-            key +
+            meta_key +
             Fore.RESET)
 
     def _sign_file(self, file, meta_key):
         ioutils.call_gpg(
-            ('-u ' +
-             meta_key +
-             ' ' if meta_key != '' else '') +
-            '-b -o "' +
-            file +
-            '.sig" "' +
-            file +
-            '"')
+            ('-u ' + meta_key + ' ' if meta_key != '' else '') +
+            '-b --yes -o ' + file + '.sig ' + file)
 
     def _release_docker(self):
         # TODO
