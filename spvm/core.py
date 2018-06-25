@@ -178,15 +178,15 @@ class PYVSProject(object):
             log.warning('Run spvm install to force setup.py replacement')
             return
 
-        # if already_present:
-        #     log.fine('Creating setup.py.backup')
-        #     ioutils.copy(
-        #         join(
-        #             self.location,
-        #             'setup.py'),
-        #         join(
-        #             self.location,
-        #             'setup.py.backup'))
+        if already_present:
+            log.fine('Creating setup.py.backup')
+            ioutils.copy(
+                join(
+                    self.location,
+                    'setup.py'),
+                join(
+                    self.location,
+                    'setup.py.backup'))
 
         log.success('Copying seyup.py from template')
         ioutils.copy(
