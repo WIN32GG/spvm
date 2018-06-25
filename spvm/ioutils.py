@@ -10,6 +10,7 @@ def call_with_stdout(args, ignore_err=False):
         if proc.poll() != 0 and not ignore_err:
             log.error('Error from subprocess')
             print(err, file=sys.stderr)
+            print(out, file=sys.stderr)
             raise CalledProcessError(proc.poll(), args)
         return out.decode()
 
