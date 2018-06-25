@@ -1,8 +1,8 @@
 {
     "project_info": {
-        "name": "myProject",
-        "description": "My project",
-        "license": "MIT",
+        "name": "",
+        "description": "",
+        "license": "ISC",
         "url": ""
     },
     
@@ -17,11 +17,18 @@
     "project_vcs": {
         "code_repository": "",
         "docker_repository": "",
-        "pypi_repository": "",
-        "project_version": "0.0.1"
+        "pypi_repository": "https://upload.pypi.org/legacy/",
+        "exclude_packages": ["test"],
+        "version": "",
+        "ignored_errors": "E121,E123,E126,E226,E24,E704,W503,W504,E501",
+        "release": {
+            "commit_template": "Inscreased version to %s",
+            "tag_template": "v%s",
+            "package_signing_key": ""
+        }
     },
 
-    "projects_requirements": {
+    "project_requirements": {
         "python_version": ">=3.4, <4",
         "python_packages": []
     }
