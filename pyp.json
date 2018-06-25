@@ -18,7 +18,12 @@
         "pypi_repository": "https://upload.pypi.org/legacy/",
         "exclude_packages": ["test"],
         "version": "0.0.1",
-        "ignored_errors": "E121,E123,E126,E226,E24,E704,W503,W504,E501"
+        "ignored_errors": "E121,E123,E126,E226,E24,E704,W503,W504,E501",
+        "release": {
+            "commit_template": "Inscreased version to %s",
+            "tag_template": "v%s",
+            "package_signing_key": ""
+        }
     },
     "project_requirements": {
         "python_version": ">=3.4, <4",
