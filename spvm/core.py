@@ -166,7 +166,6 @@ class PYVSProject(object):
         # TODO
         log.error('Not implemented')
 
-    @log.auto()
     def install_setup(self, force=False):
         """
         Install the template setup.py
@@ -178,15 +177,15 @@ class PYVSProject(object):
             log.warning('Run spvm install to force setup.py replacement')
             return
 
-        if already_present:
-            log.fine('Creating setup.py.backup')
-            ioutils.copy(
-                join(
-                    self.location,
-                    'setup.py'),
-                join(
-                    self.location,
-                    'setup.py.backup'))
+        # if already_present:
+        #     log.fine('Creating setup.py.backup')
+        #     ioutils.copy(
+        #         join(
+        #             self.location,
+        #             'setup.py'),
+        #         join(
+        #             self.location,
+        #             'setup.py.backup'))
 
         log.success('Copying seyup.py from template')
         ioutils.copy(
@@ -287,7 +286,6 @@ class PYVSProject(object):
             else:
                 f()
 
-    @log.auto()
     def check_project(self):
         """ Check code and exit if not conform """
         pf, pe = self.check_code()
