@@ -44,7 +44,8 @@ def call_git(args):
 
 @log.element('Commiting')
 def call_commit(message):
-    return call_with_stdout(['git', 'commit', '--no-edit', '-m', message])
+    return call_with_stdout(
+        ['git', 'commit', '--no-edit', '-m', '"' + message + '"'])
 
 
 def call_gpg(args):
