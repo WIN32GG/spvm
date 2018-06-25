@@ -166,6 +166,7 @@ class PYVSProject(object):
         # TODO
         log.error('Not implemented')
 
+    @log.element('Setup install')
     def install_setup(self, force=False):
         """
         Install the template setup.py
@@ -268,8 +269,10 @@ class PYVSProject(object):
             pipeline.append(self.check_project)
         if test:
             pipeline.append(self.run_test)
+
         pipeline.append(self.up_version)
         pipeline.append(self.install_setup)
+
         if publish:
             pipeline.append(self.publish)
 
@@ -284,7 +287,7 @@ class PYVSProject(object):
             if f.__name__ == 'up_version':  # the only one to give parameters to
                 f(kind)
             else:
-                f()
+                f.__call__()
 
     def check_project(self):
         """ Check code and exit if not conform """
@@ -298,6 +301,7 @@ class PYVSProject(object):
     def repair(self):
         ioutils.call_python('autopep8', '-ra --in-place .')
 
+    @log.element('Building')
     def build(self):
         log.success('Building package in ./build')
         try:
@@ -333,7 +337,7 @@ class PYVSProject(object):
             '%s', self.meta['project_vcs']['version']).replace('"', '\\"')
         log.debug('Commit message: ' + commit_message)
         ioutils.call_git('add .')
-        ioutils.call_git('commit -m "' + commit_message + '"')  # FIXME signed
+        ioutils.call_commit(commit_message)  # FIXME signed
 
         # Tag version
         tag = self.meta['project_vcs']['release']['tag_template'].replace(
@@ -350,6 +354,7 @@ class PYVSProject(object):
         self.build()
         if sign:
             self._sign_package()
+        self.clear_build()
 
     def _sign_package(self):
         """

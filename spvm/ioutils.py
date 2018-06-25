@@ -5,7 +5,7 @@ import os
 
 
 def call_with_stdout(args, ignore_err=False):
-    with Popen(args.split(' '), stdout=PIPE) as proc:
+    with Popen(args.split(' ') if type(args) == str else args, stdout=PIPE) as proc:
         out, err = proc.communicate()
         if proc.poll() != 0 and not ignore_err:
             log.error('Error from subprocess')
@@ -41,7 +41,11 @@ def call_git(args):
     return call_with_stdout('git ' + args)
 
 
-@log.clear()
+@log.element('Commiting')
+def call_commit(message):
+    return call_with_stdout(['git', 'commit', '-m', message])
+
+
 def call_gpg(args):
     return call_with_stdout('gpg ' + args)
 
