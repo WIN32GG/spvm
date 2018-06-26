@@ -33,5 +33,11 @@ setup(
 
     install_requires=meta['project_requirements']['python_packages'],
     include_package_data=True,
-    license=meta['project_info']['license']
+    license=meta['project_info']['license'],
+
+    entry_points={
+       'console_scripts': [
+           'spvm = main:main',
+       ],
+    }
 )

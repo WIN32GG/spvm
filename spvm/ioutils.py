@@ -2,6 +2,7 @@ import splogger as log
 from subprocess import Popen, check_call, PIPE, CalledProcessError
 import sys
 import os
+import pytest
 
 
 def call_with_stdout(args, ignore_err=False, stdout=PIPE):
@@ -38,7 +39,10 @@ def call_pip(args):
 
 @log.clear()
 def call_pytest(args):
-    return call_python('pytest', args)
+    o = pytest.main(args.split(' '))
+    if o != 0:
+        raise CalledProcessError(o, 'pytest '+args)
+
 
 
 @log.clear()
@@ -55,6 +59,8 @@ def call_commit(message):
 def call_gpg(args):
     return call_with_stdout('gpg ' + args)
 
+def call_twine(args):
+    return call_with_stdout('twine '+args, stdout = None)
 
 @log.element('Checking code...', log_entry=False)
 def call_check(args, ignore=""):

@@ -1,4 +1,7 @@
 import spvm.cmd as cmd
 
-if __name__ == "__main__":
+def main():
     cmd.cli()
+
+if __name__ == "__main__":
+    main()

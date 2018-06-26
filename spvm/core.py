@@ -5,9 +5,10 @@ import json
 from colorama import Fore
 import urllib.request
 import subprocess
+from time import sleep
+from shutil import rmtree
 from subprocess import CalledProcessError
 import spvm
-from time import sleep
 
 from . import ioutils
 from . import metautils
@@ -28,6 +29,7 @@ class PYVSProject(object):
         log.debug("Project status is: " + str(self.get_project_status()))
         self.projectMetaFile = join(self.location, config.metaFileName)
         self.maybe_load_meta()
+
 
     def init(self):
         """
@@ -307,7 +309,7 @@ class PYVSProject(object):
         log.success('Building package in ./build')
         try:
             ioutils.call_python(
-                '', 'setup.py sdist -d build/dist bdist_wheel -d build/bdist --universal', stdout=subprocess.PIPE)
+                '', 'setup.py sdist -d build/dist bdist_wheel -d build/dist', stdout=subprocess.PIPE)
         except CalledProcessError as ex:
             log.error('Unable to build the package')
             log.error(repr(ex))
@@ -315,8 +317,9 @@ class PYVSProject(object):
 
     @log.element('Cleaning up', log_entry=True)
     def clear_build(self):
-        # TODO remove ./build ./<name>.egg-info
-        log.error('Not implemented: clear')
+        # remove ./build ./<name>.egg-info
+        rmtree('./build', True)
+        rmtree('./'+self.get_name()+'.egg-info', True)
 
     @log.element('Publishing')
     def publish(self, git=False, pypi=True, docker=True):
@@ -348,13 +351,23 @@ class PYVSProject(object):
     @log.element('Package Publishing', log_entry=True)
     def _release_pypi(self, sign=True):
         # 🔒 🔐 🔏 🔓
+        self.clear_build()
         self.build()
         if sign:
             self._sign_package()
+        self._pypi_upload()
+        self.clear_build()
 
+    @log.clear()
+    def _pypi_upload(self, mock=False):
         # Upload
 
-        self.clear_build()
+        if True:
+            rep = "https://test.pypi.org/legacy/" # FIXME put in config
+        else:
+            rep = self.meta['project_vcs']['pypi_repository']
+        log.success('Uploading to '+rep)
+        ioutils.call_twine('upload -s --repository-url '+rep+' ./build/dist/*')
 
     @log.element('Package Signing')
     def _sign_package(self):
@@ -372,7 +385,7 @@ class PYVSProject(object):
         log.success('Signing the package with the key: ' + meta_key)
 
         try:
-            for place in os.walk(join('.', 'build', 'bdist')):
+            for place in os.walk(join('.', 'build', 'dist')):
                 for f in place[2]:
                     self._sign_file(join(place[0], f), meta_key)
         except CalledProcessError as ex:
@@ -398,7 +411,7 @@ class PYVSProject(object):
     def _sign_file(self, file, meta_key):
         ioutils.call_gpg(
             ('-u ' + meta_key + ' ' if meta_key != '' else '') +
-            '-b --yes -o ' + file + '.sig ' + file)
+            '-b --yes -a -o ' + file + '.asc ' + file)
 
     def _release_docker(self):
         # TODO
