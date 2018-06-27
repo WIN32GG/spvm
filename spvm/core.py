@@ -30,7 +30,6 @@ class PYVSProject(object):
         self.projectMetaFile = join(self.location, config.metaFileName)
         self.maybe_load_meta()
 
-
     def init(self):
         """
         Create the spvm project folder and init a base project structure
@@ -148,6 +147,8 @@ class PYVSProject(object):
             log.error("Does the dependency exist or is something broken?")
             return
 
+        self.meta['project_requirements']['python_packages'].append(dep)
+
     def maybe_load_meta(self):
         """
         If a metaFile exists, it will be loaded
@@ -207,11 +208,15 @@ class PYVSProject(object):
         """
         Run a pip upgrade of the dependency list
         """
-        ioutils.call_pip(
-            'install ' +
+        # ioutils.call_pip(
+        #     'install ' +
+        #     " ".join(
+        #         self.meta['project_requirements']['python_packages']) +
+        #     " --upgrade")
+
+        ioutils.install_packages(
             " ".join(
-                self.meta['project_requirements']['python_packages']) +
-            " --upgrade")
+                self.meta['project_requirements']['python_packages']))
 
     def up_version(self, kind):  # FIXME other to 0
         """
@@ -319,7 +324,7 @@ class PYVSProject(object):
     def clear_build(self):
         # remove ./build ./<name>.egg-info
         rmtree('./build', True)
-        rmtree('./'+self.get_name()+'.egg-info', True)
+        rmtree('./' + self.get_name() + '.egg-info', True)
 
     @log.element('Publishing')
     def publish(self, git=False, pypi=True, docker=True):
@@ -363,11 +368,14 @@ class PYVSProject(object):
         # Upload
 
         if True:
-            rep = "https://test.pypi.org/legacy/" # FIXME put in config
+            rep = "https://test.pypi.org/legacy/"  # FIXME put in config
         else:
             rep = self.meta['project_vcs']['pypi_repository']
-        log.success('Uploading to '+rep)
-        ioutils.call_twine('upload -s --repository-url '+rep+' ./build/dist/*')
+        log.success('Uploading to ' + rep)
+        ioutils.call_twine(
+            'upload -s --repository-url ' +
+            rep +
+            ' ./build/dist/*')
 
     @log.element('Package Signing')
     def _sign_package(self):
@@ -530,7 +538,7 @@ class PYVSProject(object):
         return self.meta['project_info']['name']
 
 
-def nice_print_value(key, value='', kc=Fore.BLUE, vc=Fore.LIGHTBLUE_EX):
+def nice_print_value(key, value='', kc=Fore.WHITE, vc=Fore.LIGHTBLUE_EX):
     print(f'{kc}{key} {vc}{value}{Fore.RESET}')
 
 

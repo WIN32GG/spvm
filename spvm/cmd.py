@@ -3,7 +3,6 @@ import os
 import os.path
 import splogger as log
 import spvm.core as core
-import spvm.config as cfg
 
 
 def get_project(projectname):
@@ -22,7 +21,7 @@ def get_project(projectname):
 def cli(verbose, mock):
     log.set_verbose(verbose)
     log.debug('pwd: ' + os.getcwd())
-    #FIXME cfg.configMap.mock = mock
+    # FIXME cfg.configMap.mock = mock
     core.check_script_version()
 
 

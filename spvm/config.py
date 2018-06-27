@@ -15,6 +15,7 @@ STATUS_PROJECT_INITIALIZED = "initialized"
 PADLOCK = '🔒'
 OPEN_PADLOCK = '🔓'
 
+
 class NoFailReadOnlyDict(object):
     def __init__(self, dict, default=''):
         self.dict = dict

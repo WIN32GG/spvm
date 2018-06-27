@@ -36,8 +36,8 @@ setup(
     license=meta['project_info']['license'],
 
     entry_points={
-       'console_scripts': [
-           'spvm = main:main',
-       ],
+        'console_scripts': [
+            'spvm = main:main',
+        ],
     }
 )
