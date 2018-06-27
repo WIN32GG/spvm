@@ -37,7 +37,7 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'spvm = main:main',
+            'spvm = spvm.cmd:cli',
         ],
     }
 )
