@@ -191,7 +191,7 @@ def call_git(args):
     return call_with_stdout('git ' + args)
 
 
-@log.element('Commiting')
+@log.element('Commiting', log_entry=True)
 def call_commit(message):
     return call_with_stdout(
         ['git', 'commit', '--no-edit', '-m', message])
