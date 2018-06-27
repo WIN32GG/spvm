@@ -55,7 +55,7 @@ def detect_project_meta(location):
         if remote != '':
             log.fine("Found remote " + remote)
             meta['project_vcs']['code_repository'] = call_git(
-                'remote get-url ' + remote)
+                'remote get-url ' + remote).strip()
 
         if meta['project_authors'][0]['email'] == '':
             log.fine('Using git to detect email')

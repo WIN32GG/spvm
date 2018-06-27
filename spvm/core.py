@@ -166,7 +166,7 @@ class PYVSProject(object):
 
     def remove_dependency(self, dep):
         # TODO
-        log.error('Not implemented')
+        log.error('Not implemented: remove dependency')
 
     @log.element('Setup install')
     def install_setup(self, force=False):
@@ -258,31 +258,31 @@ class PYVSProject(object):
         self.save_project_info()
         log.success(v + ' -> ' + self.get_version())
 
-    def release(self, kind='pass', update=True, publish=True,
-                check=True, test=True, repair=True):
+    def release(self, kind='pass'):
         """
         Starts a release pipeline
         """
+
+        if self.get_project_status() != config.STATUS_PROJECT_INITIALIZED:
+            log.error('The project is not initialized')
+            log.error('Run spvm init first')
+            exit(1)
 
         pipeline = []
         log.fine('Calculating release pipeline')
 
         pipeline.append(self.clear_build)
-        if update:
+        if config.config['update']:
             pipeline.append(self.update_dependencies)
-        if repair:
+        if config.config['repair']:
             pipeline.append(self.repair)
-        if check:
-            pipeline.append(self.check_project)
-        if test:
+        pipeline.append(self.check_project)
+        if config.config['test']:
             pipeline.append(self.run_test)
 
         pipeline.append(self.up_version)
         pipeline.append(self.install_setup)
-
-        if publish:
-            pipeline.append(self.publish)
-
+        pipeline.append(self.publish)
         log.success('Release pipeline is: ' +
                     " ".join([f.__name__ for f in pipeline]))
 
@@ -302,7 +302,11 @@ class PYVSProject(object):
 
         if len(pf) + len(pe) > 0:
             log.error('Project is not conform or has errors, run spvm status -s')
-            exit(1)
+            if config.config['check']:
+                log.error(
+                    Fore.RED +
+                    'This error is fatal, to make it non-fatal, use -n')
+                exit(1)
 
     @log.element('🔧 Code repair')
     def repair(self):
@@ -338,16 +342,25 @@ class PYVSProject(object):
     def _release_git(self):
         # Commit version
         commit_message = self.meta['project_vcs']['release']['commit_template'].replace(
-            '%s', self.meta['project_vcs']['version']).replace('"', '\\"')
+            '%s', self.meta['project_vcs']['version']).replace('"', '\\"').strip()
         log.debug('Commit message: ' + commit_message)
         ioutils.call_git('add .')
-        ioutils.call_commit(commit_message)  # FIXME signed
+
+        key = self.meta['project_vcs']['release']['git_signing_key']
+        if key != '':
+            log.success(
+                Fore.GREEN +
+                config.PADLOCK +
+                'Commit will be signed with ' +
+                key)
+
+        ioutils.call_commit(commit_message, key=key)
 
         # Tag version
         tag = self.meta['project_vcs']['release']['tag_template'].replace(
             '%s', self.meta['project_vcs']['version'])
-
-        ioutils.call_git('tag -s -m ' + tag + ' ' + tag)  # FIXME -u
+        ioutils.call_git('tag ' + ('' if key == '' else key) +
+                         ' -m ' + tag + ' ' + tag)  # FIXME -u
         log.success('Tagged: ' + tag)
 
         # Push

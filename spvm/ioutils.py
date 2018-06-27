@@ -192,9 +192,9 @@ def call_git(args):
 
 
 @log.element('Commiting', log_entry=True)
-def call_commit(message):
+def call_commit(message, key=''):
     return call_with_stdout(
-        ['git', 'commit', '--no-edit', '-m', message])
+        ['git', 'commit', '--no-edit', ('' if key == '' else '-S' + key), '-m', message])
 
 
 def md5(fname):
