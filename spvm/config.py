@@ -15,6 +15,11 @@ STATUS_PROJECT_INITIALIZED = "initialized"
 PADLOCK = '🔒'
 OPEN_PADLOCK = '🔓'
 
+config = {
+    'mock': False,
+    'signed': False
+}
+
 
 class NoFailReadOnlyDict(object):
     def __init__(self, dict, default=''):

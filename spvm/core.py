@@ -10,9 +10,9 @@ from shutil import rmtree
 from subprocess import CalledProcessError
 import spvm
 
+from . import config
 from . import ioutils
 from . import metautils
-from . import config
 
 
 class PYVSProject(object):
@@ -129,19 +129,17 @@ class PYVSProject(object):
                 "The project is not initialized, call spvm init first before adding dependencies")
             return
 
-        supp_args = ""
+        # if os.path.isdir(dep):
+        #     log.warning(
+        #         "Adding local dependency, this may break when releasing the project")
 
-        if os.path.isdir(dep):
-            log.warning(
-                "Adding local dependency, this may break when releasing the project")
-
-        if os.path.isfile(dep):
-            log.warning(
-                "Got a file as dependency name, using as requirements.txt")
-            supp_args = '-r '
+        # if os.path.isfile(dep):
+        #     log.warning(
+        #         "Got a file as dependency name, using as requirements.txt")
+        #     supp_args = '-r '
 
         try:
-            ioutils.call_pip('install ' + supp_args + '' + dep)
+            ioutils.install_packages('dep', True)
         except CalledProcessError as ex:
             log.error("Pip call failed with code " + str(ex.returncode))
             log.error("Does the dependency exist or is something broken?")
@@ -269,6 +267,7 @@ class PYVSProject(object):
         pipeline = []
         log.fine('Calculating release pipeline')
 
+        pipeline.append(self.clear_build)
         if update:
             pipeline.append(self.update_dependencies)
         if repair:
@@ -327,8 +326,8 @@ class PYVSProject(object):
         rmtree('./' + self.get_name() + '.egg-info', True)
 
     @log.element('Publishing')
-    def publish(self, git=False, pypi=True, docker=True):
-        if git:
+    def publish(self, git=True, pypi=True, docker=True):
+        if git and not config.config['mock']:
             self._release_git()
         if pypi:
             self._release_pypi()
@@ -364,7 +363,7 @@ class PYVSProject(object):
         self.clear_build()
 
     @log.clear()
-    def _pypi_upload(self, mock=False):
+    def _pypi_upload(self, mock=config.config['mock']):
         # Upload
 
         if True:

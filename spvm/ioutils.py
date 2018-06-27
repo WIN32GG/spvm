@@ -56,7 +56,10 @@ def query_get(url, make_json=True):
     return req.content
 
 
-def install_packages(args, check_signatures=False):
+def install_packages(args, check_signatures=None):
+    if check_signatures is None:
+        check_signatures = config.config['signed']
+
     if not check_signatures:
         call_pip('install ' + args, verbose=True)
         return
@@ -160,8 +163,9 @@ def install_packages(args, check_signatures=False):
     @log.element('Install Packages')
     def install():
         for f in os.listdir(piptmp):
-            call_pip('install ' + piptmp + os.path.sep + f)
-            log.success('Installed ' + f.split('-')[0])
+            if f.endswith('.whl'):
+                call_pip('install ' + piptmp + os.path.sep + f)
+                log.success('Installed ' + f.split('-')[0])
 
     clearup()
     download()

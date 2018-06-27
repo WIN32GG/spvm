@@ -3,6 +3,7 @@ import os
 import os.path
 import splogger as log
 import spvm.core as core
+import spvm.config as cfg
 
 
 def get_project(projectname):
@@ -18,10 +19,15 @@ def get_project(projectname):
 @click.group()
 @click.option("-v", "--verbose", is_flag=True)
 @click.option("-m", "--mock", is_flag=True)
-def cli(verbose, mock):
+@click.option("-s", "--signed", is_flag=True)
+def cli(verbose, mock, signed):
     log.set_verbose(verbose)
     log.debug('pwd: ' + os.getcwd())
     # FIXME cfg.configMap.mock = mock
+    cfg.config['mock'] = mock
+    cfg.config['signed'] = signed
+    if mock:
+        log.warning('Mock Mode enabled')
     core.check_script_version()
 
 
