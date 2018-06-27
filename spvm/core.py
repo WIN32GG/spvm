@@ -359,7 +359,7 @@ class PYVSProject(object):
         # Tag version
         tag = self.meta['project_vcs']['release']['tag_template'].replace(
             '%s', self.meta['project_vcs']['version'])
-        ioutils.call_git('tag ' + ('' if key == '' else key) +
+        ioutils.call_git('tag ' + ('' if key == '' else '-u '+key) +
                          ' -m ' + tag + ' ' + tag)  # FIXME -u
         log.success('Tagged: ' + tag)
 
