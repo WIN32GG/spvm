@@ -355,6 +355,7 @@ class PYVSProject(object):
             'Pushing to ' +
             self.meta['project_vcs']['code_repository'])
         ioutils.call_git('push --signed=if-asked')
+        log.success('Pushing tags')
         ioutils.call_git('push --tags --signed=if-asked')
 
     @log.element('Package Publishing', log_entry=True)
