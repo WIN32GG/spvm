@@ -351,6 +351,9 @@ class PYVSProject(object):
         log.success('Tagged: ' + tag)
 
         # Push
+        log.success(
+            'Pushing to ' +
+            self.meta['project_vcs']['code_repository'])
         ioutils.call_git('push --signed=if-asked')
         ioutils.call_git('push --tags --signed=if-asked')
 
