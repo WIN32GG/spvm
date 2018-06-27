@@ -51,7 +51,7 @@ def detect_project_meta(location):
     # detect .git
     if os.path.isdir(join(location, '.git')):
         log.success("Found git structure")
-        remote = call_git('remote').split(' ')[0]
+        remote = call_git('remote').split(' ')[0].strip()
         if remote != '':
             log.fine("Found remote " + remote)
             meta['project_vcs']['code_repository'] = call_git(
