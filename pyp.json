@@ -19,11 +19,11 @@
         "exclude_packages": [
             "test"
         ],
-        "version": "0.0.10",
+        "version": "0.0.11",
         "ignored_errors": "E121,E123,E126,E226,E24,E704,W503,W504,E501",
         "release": {
             "commit_template": "Inscreased version to %s",
-            "tag_template": "v%s",
+            "tag_template": "%s",
             "package_signing_key": "649472416EF7C17160678B3B0E6469000F5EF8DB"
         }
     },

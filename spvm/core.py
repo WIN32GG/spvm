@@ -346,7 +346,8 @@ class PYVSProject(object):
         # Tag version
         tag = self.meta['project_vcs']['release']['tag_template'].replace(
             '%s', self.meta['project_vcs']['version'])
-        ioutils.call_git('tag -s ' + tag)  # FIXME -u
+
+        ioutils.call_git('tag -s -m ' + tag + ' ' + tag)  # FIXME -u
 
         # Push
         ioutils.call_git('push --signed=if-asked')
