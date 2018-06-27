@@ -348,6 +348,7 @@ class PYVSProject(object):
             '%s', self.meta['project_vcs']['version'])
 
         ioutils.call_git('tag -s -m ' + tag + ' ' + tag)  # FIXME -u
+        log.success('Tagged: ' + tag)
 
         # Push
         ioutils.call_git('push --signed=if-asked')
@@ -364,10 +365,12 @@ class PYVSProject(object):
         self.clear_build()
 
     @log.clear()
-    def _pypi_upload(self, mock=config.config['mock']):
-        # Upload
+    def _pypi_upload(self, mock=None):
+        if mock is None:
+            mock = config.config['mock']
 
-        if True:
+        # Upload
+        if mock:
             rep = "https://test.pypi.org/legacy/"  # FIXME put in config
         else:
             rep = self.meta['project_vcs']['pypi_repository']
@@ -423,7 +426,7 @@ class PYVSProject(object):
 
     def _release_docker(self):
         # TODO
-        log.error('Not implemented')
+        log.error('Not implemented: docker release')
 
     def print_version_status(self):
         """
