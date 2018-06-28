@@ -1,5 +1,5 @@
 __name__ = "spvm"
-__version__ = "0.0.24"
+__version__ = "0.0.25"
 __author__ = "win32gg"
 __url__ = "https://github.com/win32gg/spvm"
 __email__ = "gregor.jouet@laposte.net"
