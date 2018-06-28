@@ -3,7 +3,6 @@ import os.path
 from os.path import join
 import json
 from colorama import Fore
-import urllib.request
 import subprocess
 from time import sleep
 from shutil import rmtree
@@ -31,6 +30,9 @@ class PYVSProject(object):
         log.debug("Project status is: " + str(self.get_project_status()))
         self.projectMetaFile = join(self.location, config.metaFileName)
         self.maybe_load_meta()
+        if self.meta is not None:
+            metautils.check_project_meta(self.meta)
+            self.save_project_info()
 
     def init(self):
         """
@@ -153,7 +155,7 @@ class PYVSProject(object):
         """
         If a metaFile exists, it will be loaded
         """
-
+        self.meta = None
         if os.path.isfile(self.projectMetaFile):
             try:
                 with open(self.projectMetaFile, 'r') as fh:
@@ -260,7 +262,7 @@ class PYVSProject(object):
         self.save_project_info()
         log.success(v + ' -> ' + self.get_version())
 
-    @log.element('🔧 Code repair')
+    @log.element('🔧 Code repair', log_entry=True)
     def repair(self):
         ioutils.call_python('autopep8', '-ra --in-place .')
 
@@ -271,29 +273,33 @@ class PYVSProject(object):
 
         with open(init_path, 'r') as fh:
             init_file = fh.read()
-        
+
         def replace_or_create(key, value):
             nonlocal init_file
-            pattern = "^"+key+" ?= ?.*" # key at the beginning of the line
+            pattern = "^" + key + " ?= ?.*"  # key at the beginning of the line
             preg = re.compile(pattern, re.M)
 
             if len(preg.findall(init_file)) == 0:
-                init_file += '\n'+key+' = "'+value+'"'
-                log.debug(key+' not found in init')
+                init_file += '\n' + key + ' = "' + value + '"'
+                log.debug(key + ' not found in init')
             else:
-                init_file = preg.sub(key+' = "'+value+'"', init_file)
-                log.debug('Found '+key+' and replaced with '+value)
+                init_file = preg.sub(key + ' = "' + value + '"', init_file)
+                log.debug('Found ' + key + ' and replaced with ' + value)
 
-        replace_or_create('__name__',  self.meta['project_info']['name'])
+        replace_or_create('__name__', self.meta['project_info']['name'])
         replace_or_create('__version__', self.meta['project_vcs']['version'])
-        replace_or_create('__author__',  self.meta['project_authors'][0]['name'])
-        replace_or_create('__url__',  self.meta['project_info']['url'])
-        replace_or_create('__email__',  self.meta['project_authors'][0]['email'])
-        
+        replace_or_create(
+            '__author__',
+            self.meta['project_authors'][0]['name'])
+        replace_or_create('__url__', self.meta['project_info']['url'])
+        replace_or_create(
+            '__email__',
+            self.meta['project_authors'][0]['email'])
+
         os.remove(init_path)
         with open(init_path, 'w+') as fh:
             fh.write(init_file)
-        
+
         log.success('Populated __init__.py')
 
     # RELEASE #
@@ -326,7 +332,10 @@ class PYVSProject(object):
         log.success('Release pipeline is: ' +
                     " -> ".join([f.__name__ for f in pipeline]))
         if not config.config['mock']:
-            log.warning(Fore.YELLOW+'The mock mode is not activated, this is for real !'+Fore.RESET)
+            log.warning(
+                Fore.YELLOW +
+                'The mock mode is not activated, this is for real !' +
+                Fore.RESET)
         if config.config['ask']:
             input('Press Enter to continue')
         for f in pipeline:
@@ -398,7 +407,7 @@ class PYVSProject(object):
         # Tag version
         tag = self.meta['project_vcs']['release']['tag_template'].replace(
             '%s', self.meta['project_vcs']['version'])
-        ioutils.call_git('tag ' + ('' if key == '' else '-u '+key) +
+        ioutils.call_git('tag ' + ('' if key == '' else '-u ' + key) +
                          ' -m ' + tag + ' ' + tag)  # FIXME -u
         log.success('Tagged: ' + tag)
 
@@ -483,7 +492,6 @@ class PYVSProject(object):
     def _release_docker(self):
         # TODO
         log.error('Not implemented: docker release')
-
 
     # PRINT INFOS #
 
@@ -617,14 +625,16 @@ def sizeof_fmt(num, suffix='B'):
 
 # version checking
 
+
 def check_script_version():
 
     def _retreive_version():
         try:
             version = spvm.__version__
             log.debug("SPVM version " + str(version))
-            lastver = ioutils.query_get("https://pypi.org/pypi/spvm/json")['info']['version']
-            log.debug('Last version is '+lastver)
+            lastver = ioutils.query_get(
+                "https://pypi.org/pypi/spvm/json")['info']['version']
+            log.debug('Last version is ' + lastver)
             if version != lastver:
                 log.warning("A new version of spvm is available (" +
                             lastver + ") you have version " + version)
@@ -632,4 +642,4 @@ def check_script_version():
         except BaseException:
             log.warning('Could not get last version')
 
-    Thread(target = _retreive_version, daemon = True).start()
+    Thread(target=_retreive_version, daemon=True).start()

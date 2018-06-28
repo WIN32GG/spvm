@@ -17,6 +17,34 @@ def get_default_template():
     return json.loads(template)
 
 
+@log.element('Check meta')
+def check_project_meta(meta):
+    """
+    Check the given meta so it matchs the template, adding  elements
+    """
+
+    def rec_check_meta(meta_elem, template_elem):
+        if type(meta_elem) not in [dict, list]:
+            return
+        for t_elem in template_elem:
+            if t_elem not in meta_elem:
+                meta_elem[t_elem] = template_elem[t_elem]
+                log.warning(
+                    'Added ' +
+                    t_elem +
+                    ' to your project meta with default value')
+            else:
+                if isinstance(template_elem[t_elem], type({})):
+                    rec_check_meta(meta_elem[t_elem], template_elem[t_elem])
+                if isinstance(template_elem[t_elem], type([])):
+                    if len(template_elem[t_elem]) > 0:
+                        for e in meta_elem[t_elem]:
+                            rec_check_meta(e, template_elem[t_elem][0])
+
+    rec_check_meta(meta, get_default_template())
+    log.debug('Checked project meta')
+
+
 @log.auto()
 def detect_project_meta(location):
     assert os.path.isdir(location)

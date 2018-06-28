@@ -198,7 +198,7 @@ def call_commit(message, key=''):
         args.append('-S' + key)
     args.append('-m')
     args.append(message)
-    
+
     return call_with_stdout(args)
 
 
