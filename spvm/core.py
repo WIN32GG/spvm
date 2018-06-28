@@ -422,6 +422,8 @@ class PYVSProject(object):
     @log.element('Package Publishing', log_entry=True)
     def _release_pypi(self, sign=True):
         # 🔒 🔐 🔏 🔓
+        if self.meta['project_vcs']['pypi_repository'] == '':
+            log.success('Nothing to push to pypi')
         self.clear_build()
         self.build()
         if sign:
