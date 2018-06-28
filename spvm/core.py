@@ -22,10 +22,10 @@ class PYVSProject(object):
     """
 
     def __init__(self, location=os.getcwd()):
-        self.location = location  # directory for project
-        if os.path.isdir(location):
-            os.chdir(location)
-            log.debug("cwd switched: " + location)
+        self.location = os.path.normpath(location)  # directory for project
+        if os.path.isdir(self.location):
+            os.chdir(self.location)
+            log.debug("cwd switched: " + self.location)
         log.debug("New  project instance @ " + self.location)
         log.debug("Project status is: " + str(self.get_project_status()))
         self.projectMetaFile = join(self.location, config.metaFileName)

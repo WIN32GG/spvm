@@ -239,7 +239,7 @@ def input_with_default(prompt, default=None, rtype=str):
 
     while True:
         res = input(f'{prompt} ({default}): ')
-        if res is 'null' or res is 'none':
+        if res == 'null' or res == 'none':
             return ''
         if res is '':
             return default
