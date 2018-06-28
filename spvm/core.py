@@ -7,6 +7,8 @@ import urllib.request
 import subprocess
 from time import sleep
 from shutil import rmtree
+from threading import Thread
+import re
 from subprocess import CalledProcessError
 import spvm
 
@@ -258,6 +260,44 @@ class PYVSProject(object):
         self.save_project_info()
         log.success(v + ' -> ' + self.get_version())
 
+    @log.element('🔧 Code repair')
+    def repair(self):
+        ioutils.call_python('autopep8', '-ra --in-place .')
+
+    def populate_init(self):
+        """ Populate the <proj>/__init__.py with meta info """
+        log.debug('Populating the __init__')
+        init_path = join(self.get_name(), '__init__.py')
+
+        with open(init_path, 'r') as fh:
+            init_file = fh.read()
+        
+        def replace_or_create(key, value):
+            nonlocal init_file
+            pattern = "^"+key+" ?= ?.*" # key at the beginning of the line
+            preg = re.compile(pattern, re.M)
+
+            if len(preg.findall(init_file)) == 0:
+                init_file += '\n'+key+' = "'+value+'"'
+                log.debug(key+' not found in init')
+            else:
+                init_file = preg.sub(key+' = "'+value+'"', init_file)
+                log.debug('Found '+key+' and replaced with '+value)
+
+        replace_or_create('__name__',  self.meta['project_info']['name'])
+        replace_or_create('__version__', self.meta['project_vcs']['version'])
+        replace_or_create('__author__',  self.meta['project_authors'][0]['name'])
+        replace_or_create('__url__',  self.meta['project_info']['url'])
+        replace_or_create('__email__',  self.meta['project_authors'][0]['email'])
+        
+        os.remove(init_path)
+        with open(init_path, 'w+') as fh:
+            fh.write(init_file)
+        
+        log.success('Populated __init__.py')
+
+    # RELEASE #
+
     def release(self, kind='pass'):
         """
         Starts a release pipeline
@@ -279,13 +319,16 @@ class PYVSProject(object):
         pipeline.append(self.check_project)
         if config.config['test']:
             pipeline.append(self.run_test)
-
         pipeline.append(self.up_version)
+        pipeline.append(self.populate_init)
         pipeline.append(self.install_setup)
         pipeline.append(self.publish)
         log.success('Release pipeline is: ' +
-                    " ".join([f.__name__ for f in pipeline]))
-
+                    " -> ".join([f.__name__ for f in pipeline]))
+        if not config.config['mock']:
+            log.warning(Fore.YELLOW+'The mock mode is not activated, this is for real !'+Fore.RESET)
+        if config.config['ask']:
+            input('Press Enter to continue')
         for f in pipeline:
             if f.__name__ == 'wrapper':
                 continue
@@ -307,10 +350,6 @@ class PYVSProject(object):
                     Fore.RED +
                     'This error is fatal, to make it non-fatal, use -n')
                 exit(1)
-
-    @log.element('🔧 Code repair')
-    def repair(self):
-        ioutils.call_python('autopep8', '-ra --in-place .')
 
     @log.element('Building', log_entry=True)
     def build(self):
@@ -445,6 +484,9 @@ class PYVSProject(object):
         # TODO
         log.error('Not implemented: docker release')
 
+
+    # PRINT INFOS #
+
     def print_version_status(self):
         """
         Print information about the version of the project
@@ -573,17 +615,21 @@ def sizeof_fmt(num, suffix='B'):
         num /= 1024.0
     return "%.1f%s%s" % (num, 'Yi', suffix)
 
+# version checking
 
 def check_script_version():
-    version = spvm.__version__
-    log.debug("SPVM version " + str(version))
-    if config.scriptVersionCheckURL is None:
-        log.warning("Nowhere to check last version")
-        return
 
-    lastver = urllib.request.urlopen(config.scriptVersionCheckURL).read()
+    def _retreive_version():
+        try:
+            version = spvm.__version__
+            log.debug("SPVM version " + str(version))
+            lastver = ioutils.query_get("https://pypi.org/pypi/spvm/json")['info']['version']
+            log.debug('Last version is '+lastver)
+            if version != lastver:
+                log.warning("A new version of spvm is available (" +
+                            lastver + ") you have version " + version)
+                log.warning("Run pip install spvm --upgrade")
+        except BaseException:
+            log.warning('Could not get last version')
 
-    if version != lastver:
-        log.warning("A new version of spvm is available (" +
-                    lastver + ") you have version " + version)
-        log.warning("Run pip install spvm --upgrade")
+    Thread(target = _retreive_version, daemon = True).start()

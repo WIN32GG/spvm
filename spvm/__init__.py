@@ -1,1 +1,5 @@
-__version__ = 'UNKNOWN'  # FIXME UPDATE
+__name__ = "spvm"
+__version__ = "0.0.24"
+__author__ = "win32gg"
+__url__ = "https://github.com/win32gg/spvm"
+__email__ = "gregor.jouet@laposte.net"

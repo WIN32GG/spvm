@@ -24,7 +24,8 @@ def get_project(projectname):
 @click.option("-n", "--nocheck", is_flag=True, help="pep8 confirmity problem become non-fatal")
 @click.option("-u", "--update", is_flag=True, help="Update dependencies before build")
 @click.option("-t", "--notest", is_flag=True, help="Skip the test part")
-def cli(verbose, mock, signed, repair, nocheck, update, notest):
+@click.option("-y", "--yes", is_flag=True, help="No confirmation")
+def cli(verbose, mock, signed, repair, nocheck, update, notest, yes):
     log.set_verbose(verbose)
     log.debug('pwd: ' + os.getcwd())
 
@@ -34,6 +35,7 @@ def cli(verbose, mock, signed, repair, nocheck, update, notest):
     cfg.config['check'] = not nocheck
     cfg.config['update'] = update
     cfg.config['test'] = not notest
+    cfg.config['ask'] = not yes
     if mock:
         log.warning('Mock Mode enabled')
     core.check_script_version()
