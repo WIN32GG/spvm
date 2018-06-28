@@ -17,7 +17,7 @@
     "project_vcs": {
         "code_repository": "",
         "docker_repository": "",
-        "pypi_repository": "https://upload.pypi.org/legacy/",
+        "pypi_repository": "",
         "exclude_packages": ["test"],
         "version": "",
         "ignored_errors": "E121,E123,E126,E226,E24,E704,W503,W504,E501",

@@ -146,9 +146,11 @@ def prompt_project_info(location, meta=get_default_template()):
     print(f'{Fore.CYAN}3/4:{Fore.LIGHTBLUE_EX} Project Version Control {Fore.RESET}')
     meta['project_vcs']['code_repository'] = input_with_default(
         'Code Repo', meta['project_vcs']['code_repository'])
+    print(f'{Fore.GREEN}SPVM does not upload to Docker by default, add a repository to upload to\nand spvm will generate a generic Dockerfile{Fore.RESET}')
     meta['project_vcs']['docker_repository'] = input_with_default(
         'Docker Repo',
         meta['project_vcs']['docker_repository'])  # f'{getpass.getuser()}/{meta.project_info.name}'
+    print(f'{Fore.GREEN}SPVM does not upload to PyPi by default use: {Fore.CYAN}https://upload.pypi.org/legacy/{Fore.GREEN} as a pypi_repo to enable it (or use your own ;) ){Fore.RESET}')
     meta['project_vcs']['pypi_repository'] = input_with_default(
         'PyPi Repo', meta['project_vcs']['pypi_repository'])
     meta['project_vcs']['version'] = input_with_default(

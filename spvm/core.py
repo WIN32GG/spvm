@@ -44,7 +44,7 @@ class PYVSProject(object):
             join(
                 self.location,
                 os.path.basename(
-                    self.location)),
+                    self.location).lower()),
             exist_ok=True)
         self.meta = metautils.detect_project_meta(self.location)
         # self.print_project_meta()
@@ -269,7 +269,7 @@ class PYVSProject(object):
     def populate_init(self):
         """ Populate the <proj>/__init__.py with meta info """
         log.debug('Populating the __init__')
-        init_path = join(self.get_name(), '__init__.py')
+        init_path = join(self.get_name().lower(), '__init__.py')
 
         with open(init_path, 'r') as fh:
             init_file = fh.read()
