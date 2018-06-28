@@ -38,6 +38,7 @@
             "autopep8",
             "pytest",
             "twine",
+            "splogger",
             "docker-py"
         ]
     }

@@ -407,8 +407,8 @@ class PYVSProject(object):
         # Tag version
         tag = self.meta['project_vcs']['release']['tag_template'].replace(
             '%s', self.meta['project_vcs']['version'])
-        ioutils.call_git('tag ' + ('' if key == '' else '-u ' + key) +
-                         ' -m ' + tag + ' ' + tag)  # FIXME -u
+        ioutils.call_git('tag ' + ('' if key == '' else '-u ' + key + ' ') +
+                         '-m ' + tag + ' ' + tag)
         log.success('Tagged: ' + tag)
 
         # Push
@@ -441,7 +441,7 @@ class PYVSProject(object):
             rep = self.meta['project_vcs']['pypi_repository']
         log.success('Uploading to ' + rep)
         ioutils.call_twine(
-            'upload -s --repository-url ' +
+            'upload --repository-url ' +
             rep +
             ' ./build/dist/*')
 
