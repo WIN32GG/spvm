@@ -6,6 +6,7 @@ from colorama import Fore
 import subprocess
 from time import sleep
 from shutil import rmtree
+import docker
 from threading import Thread
 import re
 from subprocess import CalledProcessError
@@ -18,7 +19,7 @@ from . import metautils
 
 class PYVSProject(object):
     """
-    A project object at the current cwd
+    A project object at the current cwd on which various actions are possible
     """
 
     def __init__(self, location=os.getcwd()):
@@ -304,6 +305,33 @@ class PYVSProject(object):
 
     # RELEASE #
 
+    def detect_publish_context(self):
+        """ 
+        Indicates where the code will be pushed 
+        Inspects the config map and project's meta
+        """
+
+        context =  [False, # Git
+                    False, # pypi
+                    False] # docker
+
+        mock            = config.config['mock']
+        has_pypi_rep    = self.meta['project_vcs']['pypi_repository'] != ''
+        has_docker_rep  = self.meta['project_vcs']['docker_repository'] != ''
+        has_dockerfile  = os.path.isfile(join(self.location, 'Dockerfile'))
+
+        if not mock:
+            context[0] = True
+        
+        if has_pypi_rep:
+            context[1] = True
+        
+        if has_docker_rep and has_dockerfile:
+            context[2] = True
+
+        return context
+
+        
     def release(self, kind='pass'):
         """
         Starts a release pipeline
@@ -329,8 +357,23 @@ class PYVSProject(object):
         pipeline.append(self.populate_init)
         pipeline.append(self.install_setup)
         pipeline.append(self.publish)
-        log.success('Release pipeline is: ' +
-                    " -> ".join([f.__name__ for f in pipeline]))
+
+        
+        NO  = Fore.RED+'NO'+Fore.RESET
+        MOCK = ('' if not config.config['mock'] else ' '+Fore.LIGHTYELLOW_EX+'(MOCK)'+Fore.RESET)
+        YES = Fore.GREEN+'YES'+Fore.RESET+MOCK
+
+        publish_context = self.detect_publish_context()
+        pipeline.append(Fore.CYAN+"     - Git Publish: "+(YES if publish_context[0] else NO))
+        pipeline.append(Fore.CYAN+"     - PyPi Publish: "+(YES if publish_context[1] else NO))
+        pipeline.append(Fore.CYAN+"     - Docker Publish: "+(YES if publish_context[2] else NO))
+
+        log.success('Release pipeline is: ')
+        for f in pipeline:
+            if type(f) == str:
+                log.success(f) 
+                continue
+            log.success(" -> "+f.__name__) 
         if not config.config['mock']:
             log.warning(
                 Fore.YELLOW +
@@ -339,7 +382,7 @@ class PYVSProject(object):
         if config.config['ask']:
             input('Press Enter to continue')
         for f in pipeline:
-            if f.__name__ == 'wrapper':
+            if type(f) == str or f.__name__ == 'wrapper':
                 continue
 
             log.success('> ' + f.__name__)
@@ -379,6 +422,11 @@ class PYVSProject(object):
 
     @log.element('Publishing')
     def publish(self, git=True, pypi=True, docker=True):
+        context = self.detect_publish_context()
+        git     = git and context[0]
+        pypi    = pypi and context[1]
+        docker  = docker and context[2]
+
         if git and not config.config['mock']:
             self._release_git()
         if pypi:
@@ -419,11 +467,12 @@ class PYVSProject(object):
         log.success('Pushing tags')
         ioutils.call_git('push --tags --signed=if-asked')
 
-    @log.element('Package Publishing', log_entry=True)
+    @log.element('Package Release', log_entry=True)
     def _release_pypi(self, sign=True):
         # 🔒 🔐 🔏 🔓
         if self.meta['project_vcs']['pypi_repository'] == '':
             log.success('Nothing to push to pypi')
+            return
         self.clear_build()
         self.build()
         if sign:
@@ -491,9 +540,61 @@ class PYVSProject(object):
             ('-u ' + meta_key + ' ' if meta_key != '' else '') +
             '-b --yes -a -o ' + file + '.asc ' + file)
 
+    @log.element('Docker Publishing', log_entry = True)
     def _release_docker(self):
-        # TODO
-        log.error('Not implemented: docker release')
+        log.success('Building Docker Image')
+        client = docker.from_env()
+        log.debug(json.dumps(client.version(), indent= 4))
+        
+        status = {}
+        def _show_docker_progress(obj):
+            nonlocal status
+
+            if 'errorDetail' in obj:
+                log.error(Fore.RED+'Error: '+str(obj['errorDetail']['message'])+Fore.RESET)
+                raise docker.errors.DockerException(obj['errorDetail']['message'])
+
+            if 'stream' in obj:
+                for l in obj['stream'].split('\n'):
+                    if l == '':
+                        continue
+                    log.success(l.strip())
+                status.clear()
+                return
+
+            if 'status' in obj:
+                if 'id' not in obj:
+                    log.success(obj['status'])
+                    return
+
+                s = obj['id'].strip()+' '+obj['status']+'\t'
+                if 'progress' in obj:
+                    s += obj['progress']
+                    
+                if obj['id'] not in status:
+                    status[obj['id']] = {'index': len(status) + 1, 'str': s}
+                    print(s)
+                    return                
+
+                status[obj['id']]['str'] = s
+                print('\033[F'*(len(status)+1))
+                for e in status:
+                    print('\033[K'+status[e]['str'])
+                # print('\n'*i, end = '')
+
+        # FIXME choose dockerfile
+        rep = self.meta['project_vcs']['docker_repository']
+        log.success('Image repo: '+rep)
+        g = client.build( path = '.', dockerfile = 'Dockerfile')
+        for line in g:
+            _show_docker_progress(json.loads(line.decode()))
+
+        if config.config['mock']:
+            log.warning(Fore.YELLOW+'Mock mode: not pushing'+Fore.RESET)
+            return
+        log.success('Pushing image')
+        for line in client.push(rep, stream = True):
+            _show_docker_progress(json.loads(line.decode()))
 
     # PRINT INFOS #
 

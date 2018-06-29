@@ -14,7 +14,7 @@
     ],
     "project_vcs": {
         "code_repository": "https://github.com/win32gg/spvm",
-        "docker_repository": "",
+        "docker_repository": "WIN32GG/spvm",
         "pypi_repository": "https://upload.pypi.org/legacy/",
         "exclude_packages": [
             "test"
@@ -25,7 +25,8 @@
             "commit_template": "Inscreased version to %s",
             "tag_template": "%s",
             "package_signing_key": "649472416EF7C17160678B3B0E6469000F5EF8DB",
-            "git_signing_key": "649472416EF7C17160678B3B0E6469000F5EF8DB"
+            "git_signing_key": "649472416EF7C17160678B3B0E6469000F5EF8DB",
+            "docker_tags": "latest,%s"
         }
     },
     "project_requirements": {
@@ -42,5 +43,10 @@
             "docker-py",
             "wrapt"
         ]
+    },
+    "scripts": {
+        "pre-test": "",
+        "test": "pypi",
+        "post-test": ""
     }
 }
