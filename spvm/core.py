@@ -481,9 +481,8 @@ class PYVSProject(object):
         self.clear_build()
 
     @log.clear()
-    def _pypi_upload(self, mock=None):
-        if mock is None:
-            mock = config.config['mock']
+    def _pypi_upload(self):
+        mock = config.config['mock']
 
         # Upload
         if mock:
@@ -585,7 +584,7 @@ class PYVSProject(object):
         # FIXME choose dockerfile
         rep = self.meta['project_vcs']['docker_repository']
         log.success('Image repo: '+rep)
-        g = client.build( path = '.', dockerfile = 'Dockerfile')
+        g = client.build(tag = rep, path = '.', dockerfile = 'Dockerfile')
         for line in g:
             _show_docker_progress(json.loads(line.decode()))
 

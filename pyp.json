@@ -14,7 +14,7 @@
     ],
     "project_vcs": {
         "code_repository": "https://github.com/win32gg/spvm",
-        "docker_repository": "WIN32GG/spvm",
+        "docker_repository": "win32gg/spvm",
         "pypi_repository": "https://upload.pypi.org/legacy/",
         "exclude_packages": [
             "test"
