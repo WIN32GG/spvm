@@ -1,1 +1,0 @@
-# Simple Python Versioning Manager
