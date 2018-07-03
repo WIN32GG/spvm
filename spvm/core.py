@@ -428,7 +428,7 @@ class PYVSProject(object):
         rmtree('./build', True)
         rmtree('./' + self.get_name() + '.egg-info', True)
 
-    @log.element('Publishing', log_entry = True)
+    @log.element('Publishing', log_entry=True)
     def publish(self, git=True, pypi=True, docker=True):
         context = self.detect_publish_context()
         git = git and context[0]
@@ -580,7 +580,10 @@ class PYVSProject(object):
                     return
 
                 if len(status) == 0:
-                    print(Fore.GREEN+"\rA docker I/O operation is in progress"+Fore.RESET)
+                    print(
+                        Fore.GREEN +
+                        "\rA docker I/O operation is in progress" +
+                        Fore.RESET)
 
                 s = obj['id'].strip() + ' ' + obj['status'] + '\t'
                 if 'progress' in obj:
@@ -679,7 +682,7 @@ class PYVSProject(object):
         total_size = 0
         for dirpath, _, filenames in os.walk(self.location):
             if self.match_gitignore(dirpath):
-                log.debug('Ignored '+dirpath)
+                log.debug('Ignored ' + dirpath)
                 continue
             for f in filenames:
                 fp = os.path.join(dirpath, f)
@@ -692,7 +695,6 @@ class PYVSProject(object):
                 return True
         return False
 
-
     def load_gitignore(self):
         if not os.path.isfile(join(self.location, '.gitignore')):
             self.gitignore = ''
@@ -704,7 +706,7 @@ class PYVSProject(object):
             gi = [join(self.location, e) for e in gi]
             gi.append(join(self.location, '.git'))
             self.gitignore = ','.join(gi)
-            log.debug('Ignoring: '+self.gitignore)
+            log.debug('Ignoring: ' + self.gitignore)
 
     @log.clear()
     def print_project_status(self, show=False):

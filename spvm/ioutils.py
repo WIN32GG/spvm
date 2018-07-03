@@ -25,7 +25,7 @@ def call_with_stdout(args, ignore_err=False,
                 print('out: ' + str(out), file=sys.stderr)
             raise CalledProcessError(proc.poll(), args)
         if log.get_verbose():
-            log.debug('Output of '+repr(args))
+            log.debug('Output of ' + repr(args))
             if out is not None:
                 print(out.decode())
             if err is not None:
@@ -225,9 +225,9 @@ def call_check(args, ignore="", exclude=None):
     flakes = call_with_stdout('python -m pyflakes ' + args, ignore_err=True)
     pep8 = call_with_stdout(
         'python -m pycodestyle --ignore=' +
-        ignore +       
+        ignore +
         ' ' +
-        ('' if exclude == '' else '--exclude='+exclude) +
+        ('' if exclude == '' else '--exclude=' + exclude) +
         ' ' +
         args,
         ignore_err=True)
