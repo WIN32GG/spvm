@@ -11,6 +11,7 @@ from threading import Thread
 import re
 from subprocess import CalledProcessError
 import spvm
+import fnmatch
 
 from . import config
 from . import ioutils
@@ -34,6 +35,7 @@ class PYVSProject(object):
         if self.meta is not None:
             metautils.check_project_meta(self.meta)
             self.save_project_info()
+        self.load_gitignore()
 
     def init(self):
         """
@@ -86,7 +88,7 @@ class PYVSProject(object):
         """
 
         flakes, pep = ioutils.call_check(
-            self.location, ignore=self.meta['project_vcs']['ignored_errors'])
+            self.location, ignore=self.meta['project_vcs']['ignored_errors'], exclude=self.gitignore)
 
         flakes = flakes.split('\n')[:-1]
         pep = pep.split('\n')[:-1]
@@ -426,7 +428,7 @@ class PYVSProject(object):
         rmtree('./build', True)
         rmtree('./' + self.get_name() + '.egg-info', True)
 
-    @log.element('Publishing')
+    @log.element('Publishing', log_entry = True)
     def publish(self, git=True, pypi=True, docker=True):
         context = self.detect_publish_context()
         git = git and context[0]
@@ -577,6 +579,9 @@ class PYVSProject(object):
                     log.success(obj['status'])
                     return
 
+                if len(status) == 0:
+                    print(Fore.GREEN+"\rA docker I/O operation is in progress"+Fore.RESET)
+
                 s = obj['id'].strip() + ' ' + obj['status'] + '\t'
                 if 'progress' in obj:
                     s += obj['progress']
@@ -673,10 +678,33 @@ class PYVSProject(object):
     def get_project_size(self):
         total_size = 0
         for dirpath, _, filenames in os.walk(self.location):
+            if self.match_gitignore(dirpath):
+                log.debug('Ignored '+dirpath)
+                continue
             for f in filenames:
                 fp = os.path.join(dirpath, f)
                 total_size += os.path.getsize(fp)
         return sizeof_fmt(total_size)
+
+    def match_gitignore(self, name):
+        for pattern in self.gitignore.split(','):
+            if fnmatch.fnmatch(name, pattern):
+                return True
+        return False
+
+
+    def load_gitignore(self):
+        if not os.path.isfile(join(self.location, '.gitignore')):
+            self.gitignore = ''
+            return
+
+        with open(join(self.location, '.gitignore'), 'r') as fh:
+            gi = fh.read()
+            gi = gi.replace('\n\n', '\n').strip().split('\n')
+            gi = [join(self.location, e) for e in gi]
+            gi.append(join(self.location, '.git'))
+            self.gitignore = ','.join(gi)
+            log.debug('Ignoring: '+self.gitignore)
 
     @log.clear()
     def print_project_status(self, show=False):
