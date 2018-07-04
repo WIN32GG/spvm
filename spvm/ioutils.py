@@ -7,6 +7,8 @@ import pytest
 import requests
 from colorama import Fore
 import hashlib
+from os.path import join
+import fnmatch
 
 from . import config
 
@@ -174,6 +176,11 @@ def install_packages(args, check_signatures=None):
     install()
     clearup()
 
+def match_gitignore(name, ignore):
+    for pattern in ignore.split(','):
+        if fnmatch.fnmatch(name, pattern):
+            return True
+    return False
 
 def call_pip(args, verbose=log.get_verbose()):
     fh = PIPE if verbose else FNULL
@@ -222,7 +229,27 @@ def call_twine(args):
 
 @log.element('Checking code', log_entry=False)
 def call_check(args, ignore="", exclude=''):
-    flakes = call_with_stdout('python -m pyflakes ' + args, ignore_err=True)
+    flakes = []
+    for dirname, _, files in os.walk(args):
+        if os.path.ismount(dirname) or os.path.islink(dirname):
+            log.warning('Ignored mounted/link directory: '+dirname)
+            continue
+
+        if match_gitignore(dirname, exclude):
+            continue
+
+        for f in files:
+            if not f.endswith('.py'):
+                continue
+            log.debug('Check: '+f)
+            if match_gitignore(join(dirname, f), exclude):
+                continue 
+            
+            flak = call_with_stdout('python -m pyflakes ' + join(dirname, f), ignore_err=True)
+            if flak is not None:
+                flakes.append(flak)
+
+    # flakes = call_with_stdout('python -m pyflakes ' + args, ignore_err=True)
     pep8 = call_with_stdout(
         'python -m pycodestyle --ignore=' +
         ignore +     

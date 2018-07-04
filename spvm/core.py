@@ -690,10 +690,7 @@ class PYVSProject(object):
         return sizeof_fmt(total_size)
 
     def match_gitignore(self, name):
-        for pattern in self.gitignore.split(','):
-            if fnmatch.fnmatch(name, pattern):
-                return True
-        return False
+        return ioutils.match_gitignore(name, self.gitignore)
 
     def load_gitignore(self):
         if not os.path.isfile(join(self.location, '.gitignore')):
