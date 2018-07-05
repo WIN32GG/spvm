@@ -7,6 +7,8 @@ import pytest
 import requests
 from colorama import Fore
 import hashlib
+from os.path import join
+import fnmatch
 
 from . import config
 
@@ -25,7 +27,7 @@ def call_with_stdout(args, ignore_err=False,
                 print('out: ' + str(out), file=sys.stderr)
             raise CalledProcessError(proc.poll(), args)
         if log.get_verbose():
-            log.debug('Output of ' + repr(args))
+            log.debug('Output of '+repr(args))
             if out is not None:
                 print(out.decode())
             if err is not None:
@@ -174,6 +176,11 @@ def install_packages(args, check_signatures=None):
     install()
     clearup()
 
+def match_gitignore(name, ignore):
+    for pattern in ignore.split(','):
+        if fnmatch.fnmatch(name, pattern):
+            return True
+    return False
 
 def call_pip(args, verbose=log.get_verbose()):
     fh = PIPE if verbose else FNULL
@@ -220,14 +227,34 @@ def call_twine(args):
     return call_with_stdout('twine ' + args, stdout=None)
 
 
-@log.element('Checking code...', log_entry=False)
-def call_check(args, ignore="", exclude=None):
-    flakes = call_with_stdout('python -m pyflakes ' + args, ignore_err=True)
+@log.element('Checking code', log_entry=False)
+def call_check(args, ignore="", exclude=''):
+    flakes = ''
+    for dirname, _, files in os.walk(args):
+        if os.path.ismount(dirname) or os.path.islink(dirname):
+            log.warning('Ignored mounted/link directory: '+dirname)
+            continue
+
+        if match_gitignore(dirname, exclude):
+            continue
+
+        for f in files:
+            if not f.endswith('.py'):
+                continue
+            log.debug('Check: '+f)
+            if match_gitignore(join(dirname, f), exclude):
+                continue 
+            
+            flak = call_with_stdout('python -m pyflakes ' + join(dirname, f), ignore_err=True)
+            if flak is not None:
+                flakes += flak
+
+    # flakes = call_with_stdout('python -m pyflakes ' + args, ignore_err=True)
     pep8 = call_with_stdout(
         'python -m pycodestyle --ignore=' +
-        ignore +
+        ignore +     
         ' ' +
-        ('' if exclude == '' else '--exclude=' + exclude) +
+        ('' if exclude == '' else '--exclude='+exclude) +
         ' ' +
         args,
         ignore_err=True)

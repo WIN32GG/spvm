@@ -146,7 +146,7 @@ class PYVSProject(object):
         #     supp_args = '-r '
 
         try:
-            ioutils.install_packages('dep', True)
+            ioutils.install_packages(dep, True)
         except CalledProcessError as ex:
             log.error("Pip call failed with code " + str(ex.returncode))
             log.error("Does the dependency exist or is something broken?")
@@ -711,10 +711,7 @@ class PYVSProject(object):
         return sizeof_fmt(total_size)
 
     def match_gitignore(self, name):
-        for pattern in self.gitignore.split(','):
-            if fnmatch.fnmatch(name, pattern):
-                return True
-        return False
+        return ioutils.match_gitignore(name, self.gitignore)
 
     def load_gitignore(self):
         if not os.path.isfile(join(self.location, '.gitignore')):
