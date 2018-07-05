@@ -11,7 +11,6 @@ from threading import Thread
 import re
 from subprocess import CalledProcessError
 import spvm
-import fnmatch
 
 from . import config
 from . import ioutils
@@ -613,6 +612,27 @@ class PYVSProject(object):
         log.success('Pushing image')
         for line in client.push(rep, stream=True):
             _show_docker_progress(json.loads(line.decode()))
+
+    def run(self, scriptname):
+        if scriptname not in self.meta['scripts']:
+            log.error('Script not found: '+scriptname)
+            exit(1)
+        
+        self._run_scripts_pipeline(scriptname)
+
+    @log.clear()
+    def _run_scripts_pipeline(self, name):
+        if 'pre'+name in self.meta['scripts']:
+            self._run('pre'+name)
+        self._run(name)
+        if 'post'+name in self.meta['scripts']:
+            self._run('post'+name)
+        
+
+    def _run(self, name):
+        log.success('Running script: '+name)
+        script = self.meta['scripts'][name]
+        ioutils.call_with_stdout(['/bin/sh', '-c', script], stdout=None, stderr=None)
 
     # PRINT INFOS #
 

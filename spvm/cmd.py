@@ -45,6 +45,12 @@ def cli(verbose, mock, signed, repair, nocheck, update, notest, yes):
         log.warning('Mock Mode enabled')
     core.check_script_version()
 
+@cli.command()
+@click.argument('scriptname', default="noop")
+@click.argument('projectname', default=".")
+def run(scriptname, projectname):
+    log.debug('Script from CLI: '+scriptname)
+    get_project(projectname).run(scriptname)
 
 @cli.command()
 @click.argument('projectname', default=".")
