@@ -11,7 +11,6 @@ from threading import Thread
 import re
 from subprocess import CalledProcessError
 import spvm
-import fnmatch
 
 from . import config
 from . import ioutils
@@ -633,7 +632,7 @@ class PYVSProject(object):
     def _run(self, name):
         log.success('Running script: '+name)
         script = self.meta['scripts'][name]
-        ioutils.call_with_stdout(['/bin/bash', '-c', script], stdout=None, stderr=None)
+        ioutils.call_with_stdout(['/bin/sh', '-c', script], stdout=None, stderr=None)
 
     # PRINT INFOS #
 
