@@ -9,6 +9,10 @@ from colorama import Fore
 import hashlib
 from os.path import join
 import fnmatch
+import gnupg
+import json
+import getpass
+from datetime import datetime
 
 from . import config
 
@@ -20,12 +24,12 @@ def call_with_stdout(args, ignore_err=False,
     with Popen(args.split(' ') if type(args) == str else args, stdout=stdout, stdin=PIPE if inp is not None else None, stderr=stderr) as proc:
         out, err = proc.communicate(input=inp)
         if proc.poll() != 0 and not ignore_err:
-            log.error('Error from subprocess')
-            if err is not None and err != '':
-                print('err: ' + str(err), file=sys.stderr)
-            if out is not None and out != '':
-                print('out: ' + str(out), file=sys.stderr)
-            raise CalledProcessError(proc.poll(), args)
+            # log.error('Error from subprocess')
+            # if err is not None and err != '':
+            #     print('err: ' + str(err), file=sys.stderr)
+            # if out is not None and out != '':
+            #     print('out: ' + str(out), file=sys.stderr)
+            raise CalledProcessError(proc.poll(), args, out, err)
         if log.get_verbose():
             log.debug('Output of '+repr(args))
             if out is not None:
@@ -36,6 +40,72 @@ def call_with_stdout(args, ignore_err=False,
         if out is not None:
             return out.decode()
 
+def read_logins():
+    if os.path.isfile('.logins'):
+        log.debug('Found login file')
+        gpg = gnupg.GPG()
+
+        cr = None
+        with open('.logins', 'r') as fh:
+            cr = json.loads(fh.read())
+
+        log.success(Fore.GREEN+config.OPEN_PADLOCK+' Unlocking logins'+Fore.RESET)
+        v = gpg.decrypt(cr.data)
+        cr['data'] = v
+        log.success('Got login for '+' '.join(v))
+        
+        return cr
+    return None
+
+def get_date(): 
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+def ask_logins():
+    if os.path.isfile('.logins'):
+        log.warning(Fore.YELLOW+'The logins file already exist, overwrite it ?'+Fore.RESET)
+        yes = input('Enter \'yes\' to overwrite: ')
+        if yes != 'yes':
+            return
+
+    cr = {
+        'creation_date': get_date(),
+        'data': {}
+    }
+
+    print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+    print(Fore.YELLOW+'\tLogins configuration\n'+Fore.RESET)
+    print(Fore.GREEN+'You are going to be asked you credentials for this project\n'
+          +'They will be stored under .logins crypted with AES and .logins append to .gitignore'+Fore.RESET)
+          
+    yes = input('Do you wish to continue? (Enter "yes" to continue): ')
+    if yes != 'yes':
+        log.error('Cancelled')
+        return
+    print('')
+
+    def ask_login(component):
+        print(Fore.LIGHTGREEN_EX+'\nNow configuring login for: '+Fore.GREEN+component)
+        print(Fore.RED+"Leave blank if Not Applicable"+Fore.RESET)
+        login = input('Login: ')
+        if login == '':
+            return {}
+        password = getpass.getpass()
+
+        return {'login': login, 'password': password}
+    
+    cr['data']['git']    = ask_login('git')
+    cr['data']['pypi']   = ask_login('pypi')
+    cr['data']['docker'] = ask_login('docker')
+
+    gpg = gnupg.GPG()
+    gpg.encrypt(json.dumps(cr), (), symmetric=True, output='.logins')
+
+    try:
+        call_git('check-ignore .logins')
+    except CalledProcessError:
+        with open('.gitignore', 'a') as fh:
+            fh.write('\.logins')
+        log.success('Appened .logins to .gitignore')
 
 def call_python(module, args, stdout=None, stderr=None):
     mod = [] if module == '' else ['-m', module]
@@ -223,12 +293,13 @@ def md5(fname):
 
 
 def call_gpg(args, inp=None, verbose=log.get_verbose()):
+    log.error('Call to gpg deprecated')
     fh = PIPE if verbose else FNULL
     return call_with_stdout('gpg ' + args, inp=inp, stdout=fh, stderr=fh)
 
 
 def call_twine(args):
-    return call_with_stdout('twine ' + args, stdout=None)
+    return call_with_stdout('twine ' + args, stdout=None) # FIXME import and use
 
 
 @log.element('Checking code', log_entry=False)
@@ -246,6 +317,7 @@ def call_check(args, ignore="", exclude=''):
             if not f.endswith('.py'):
                 continue
             log.debug('Check: '+f)
+            log.set_additional_info(f)
             if match_gitignore(join(dirname, f), exclude):
                 continue 
             

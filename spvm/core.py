@@ -545,6 +545,7 @@ class PYVSProject(object):
         ioutils.call_gpg(
             ('-u ' + meta_key + ' ' if meta_key != '' else '') +
             '-b --yes -a -o ' + file + '.asc ' + file)
+    
 
     @log.element('Docker Publishing', log_entry=True)
     def _release_docker(self):
@@ -633,6 +634,10 @@ class PYVSProject(object):
         log.success('Running script: '+name)
         script = self.meta['scripts'][name]
         ioutils.call_with_stdout(['/bin/sh', '-c', script], stdout=None, stderr=None)
+
+
+    def login(self):
+        ioutils.ask_logins()
 
     # PRINT INFOS #
 
@@ -769,7 +774,7 @@ class PYVSProject(object):
 
 
 def nice_print_value(key, value='', kc=Fore.WHITE, vc=Fore.LIGHTBLUE_EX):
-    print(f'{kc}{key} {vc}{value}{Fore.RESET}')
+    print(f'{kc}{key} {vc}{value}{Fore.RESET}\033[K')
 
 
 def make_project_object(location):
