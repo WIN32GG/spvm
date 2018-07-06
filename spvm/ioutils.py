@@ -71,7 +71,9 @@ def install_packages(args, check_signatures=None):
 
     @log.element('Download Packages', log_entry=True)
     def download():
-        call_pip('download -d ' + piptmp + ' ' + args)
+        for pack in args.split(' '):
+            log.set_additional_info(pack)
+            call_pip('download -d ' + piptmp + ' ' + pack)
 
     @log.element('Checking Packages')
     def check_packages(base_url='https://pypi.python.org/pypi/'):
@@ -79,6 +81,7 @@ def install_packages(args, check_signatures=None):
         unchecked = 0
         for f in os.listdir(piptmp):
             try:
+                log.set_additional_info(f)
                 f_ = piptmp + os.sep + f
                 if not os.path.isfile(f_):
                     continue
@@ -167,8 +170,9 @@ def install_packages(args, check_signatures=None):
     def install():
         for f in os.listdir(piptmp):
             if f.endswith('.whl'):
+                log.set_additional_info(f)
                 call_pip('install ' + piptmp + os.path.sep + f)
-                log.success('Installed ' + f.split('-')[0])
+                # log.success('Installed ' + f.split('-')[0])
 
     clearup()
     download()
