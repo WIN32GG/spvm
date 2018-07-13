@@ -12,6 +12,7 @@ import fnmatch
 import gnupg
 import json
 import getpass
+from .config import NoFailReadOnlyDict
 from datetime import datetime
 
 from . import config
@@ -42,7 +43,7 @@ def call_with_stdout(args, ignore_err=False,
 
 def read_logins():
     if os.path.isfile('.logins'):
-        log.debug('Found login file')
+        log.success(Fore.GREEN+config.PADLOCK+" Found crypted logins file"+Fore.RESET)
         gpg = gnupg.GPG()
 
         cr = None
@@ -52,9 +53,9 @@ def read_logins():
         log.success(Fore.GREEN+config.OPEN_PADLOCK+' Unlocking logins'+Fore.RESET)
         v = gpg.decrypt(cr.data)
         cr['data'] = v
-        log.success('Got login for '+' '.join(v))
+        log.success(Fore.GREEN+'Got logins for '+' '.join(v)+Fore.RESET)
         
-        return cr
+        return NoFailReadOnlyDict(cr, default = None)
     return None
 
 def get_date(): 
@@ -83,19 +84,18 @@ def ask_logins():
         return
     print('')
 
-    def ask_login(component):
+    def ask_login(arr, component):
         print(Fore.LIGHTGREEN_EX+'\nNow configuring login for: '+Fore.GREEN+component)
         print(Fore.RED+"Leave blank if Not Applicable"+Fore.RESET)
         login = input('Login: ')
         if login == '':
-            return {}
+            return
         password = getpass.getpass()
-
-        return {'login': login, 'password': password}
+        arr[component] = {'login': login, 'password': password}
     
-    cr['data']['git']    = ask_login('git')
-    cr['data']['pypi']   = ask_login('pypi')
-    cr['data']['docker'] = ask_login('docker')
+    ask_login(cr['data'], 'git')
+    ask_login(cr['data'], 'pypi')
+    ask_login(cr['data'], 'docker')
 
     gpg = gnupg.GPG()
     gpg.encrypt(json.dumps(cr), (), symmetric=True, output='.logins')

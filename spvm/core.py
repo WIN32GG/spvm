@@ -42,12 +42,11 @@ class PYVSProject(object):
         Guess project meta and asks for correction, write in metaFile
         """
         os.makedirs(join(self.location, 'test'), exist_ok=True)
-        os.makedirs(
-            join(
-                self.location,
-                os.path.basename(
-                    self.location).lower()),
+        os.makedirs(join(
+                    self.location,
+                    os.path.basename(self.location).lower()),
             exist_ok=True)
+
         self.meta = metautils.detect_project_meta(self.location)
         # self.print_project_meta()
         while True:
@@ -290,13 +289,9 @@ class PYVSProject(object):
 
         replace_or_create('__name__', self.meta['project_info']['name'])
         replace_or_create('__version__', self.meta['project_vcs']['version'])
-        replace_or_create(
-            '__author__',
-            self.meta['project_authors'][0]['name'])
+        replace_or_create('__author__', self.meta['project_authors'][0]['name'])
         replace_or_create('__url__', self.meta['project_info']['url'])
-        replace_or_create(
-            '__email__',
-            self.meta['project_authors'][0]['email'])
+        replace_or_create('__email__', self.meta['project_authors'][0]['email'])
 
         os.remove(init_path)
         with open(init_path, 'w+') as fh:
@@ -367,13 +362,9 @@ class PYVSProject(object):
         YES = Fore.GREEN + 'YES' + Fore.RESET + MOCK
 
         publish_context = self.detect_publish_context()
-        pipeline.append(Fore.CYAN + "     - Git Publish: " +
-                        (YES if publish_context[0] else NO))
-        pipeline.append(Fore.CYAN + "     - PyPi Publish: " +
-                        (YES if publish_context[1] else NO))
-        pipeline.append(Fore.CYAN +
-                        "     - Docker Publish: " +
-                        (YES if publish_context[2] else NO))
+        pipeline.append(Fore.CYAN + "     - Git Publish: "    + (YES if publish_context[0] else NO))
+        pipeline.append(Fore.CYAN + "     - PyPi Publish: "   + (YES if publish_context[1] else NO))
+        pipeline.append(Fore.CYAN + "     - Docker Publish: " + (YES if publish_context[2] else NO))
 
         log.success('Release pipeline is: ')
         for f in pipeline:
@@ -381,13 +372,16 @@ class PYVSProject(object):
                 log.success(f)
                 continue
             log.success(" -> " + f.__name__)
+
         if not config.config['mock']:
             log.warning(
                 Fore.YELLOW +
                 'The mock mode is not activated, this is for real !' +
                 Fore.RESET)
+
         if config.config['ask']:
             input('Press Enter to continue')
+
         for f in pipeline:
             if isinstance(f, str) or f.__name__ == 'wrapper':
                 continue
@@ -414,8 +408,7 @@ class PYVSProject(object):
     def build(self):
         log.success('Building package in ./build')
         try:
-            ioutils.call_python(
-                '', 'setup.py sdist -d build/dist bdist_wheel -d build/dist', stdout=subprocess.PIPE)
+            ioutils.call_python('', 'setup.py sdist -d build/dist bdist_wheel -d build/dist', stdout=subprocess.PIPE)
         except CalledProcessError as ex:
             log.error('Unable to build the package')
             log.error(repr(ex))
@@ -434,28 +427,26 @@ class PYVSProject(object):
         pypi = pypi and context[1]
         docker = docker and context[2]
 
+        logins = ioutils.read_logins()
+
         if git and not config.config['mock']:
-            self._release_git()
+            self._release_git(credentials = logins['git'])
         if pypi:
-            self._release_pypi()
+            self._release_pypi(credentials = logins['pypi'])
         if docker:
-            self._release_docker()
+            self._release_docker(credentials = logins['docker'])
 
     @log.element('Git Publishing', log_entry=True)
-    def _release_git(self):
+    def _release_git(self, credentials = None):
         # Commit version
         commit_message = self.meta['project_vcs']['release']['commit_template'].replace(
-            '%s', self.meta['project_vcs']['version']).replace('"', '\\"').strip()
+             '%s', self.meta['project_vcs']['version']).replace('"', '\\"').strip()
         log.debug('Commit message: ' + commit_message)
         ioutils.call_git('add .')
 
         key = self.meta['project_vcs']['release']['git_signing_key']
         if key != '':
-            log.success(
-                Fore.GREEN +
-                config.PADLOCK +
-                'Commit will be signed with ' +
-                key)
+            log.success(Fore.GREEN + config.PADLOCK + 'Commit will be signed with ' + key)
 
         ioutils.call_commit(commit_message, key=key)
 
@@ -464,18 +455,21 @@ class PYVSProject(object):
             '%s', self.meta['project_vcs']['version'])
         ioutils.call_git('tag ' + ('' if key == '' else '-u ' + key + ' ') +
                          '-m ' + tag + ' ' + tag)
+
         log.success('Tagged: ' + tag)
 
+        # Login
+        if credentials != None:
+            pass
+
         # Push
-        log.success(
-            'Pushing to ' +
-            self.meta['project_vcs']['code_repository'])
+        log.success('Pushing to ' + self.meta['project_vcs']['code_repository'])
         ioutils.call_git('push --signed=if-asked')
         log.success('Pushing tags')
         ioutils.call_git('push --tags --signed=if-asked')
 
     @log.element('Package Release', log_entry=True)
-    def _release_pypi(self, sign=True):
+    def _release_pypi(self, sign=True, credentials = None):
         # 🔒 🔐 🔏 🔓
         if self.meta['project_vcs']['pypi_repository'] == '':
             log.success('Nothing to push to pypi')
@@ -484,11 +478,11 @@ class PYVSProject(object):
         self.build()
         if sign:
             self._sign_package()
-        self._pypi_upload()
+        self._pypi_upload(credentials)
         self.clear_build()
 
     @log.clear()
-    def _pypi_upload(self):
+    def _pypi_upload(self, credentials = None):
         mock = config.config['mock']
 
         # Upload
@@ -497,10 +491,9 @@ class PYVSProject(object):
         else:
             rep = self.meta['project_vcs']['pypi_repository']
         log.success('Uploading to ' + rep)
-        ioutils.call_twine(
-            'upload --repository-url ' +
-            rep +
-            ' ./build/dist/*')
+        ioutils.call_twine('upload --repository-url ' + rep + ' ./build/dist/*' +
+                ('' if credentials == None else ' -u '+credentials['login']+ ' -p '+credentials['password'])
+            )
 
     @log.element('Package Signing')
     def _sign_package(self):
@@ -548,7 +541,7 @@ class PYVSProject(object):
     
 
     @log.element('Docker Publishing', log_entry=True)
-    def _release_docker(self):
+    def _release_docker(self, credentials = None):
         log.success('Building Docker Image')
         client = docker.from_env()
         log.debug(json.dumps(client.version(), indent=4))
@@ -610,6 +603,15 @@ class PYVSProject(object):
         if config.config['mock']:
             log.warning(Fore.YELLOW + 'Mock mode: not pushing' + Fore.RESET)
             return
+
+        if credentials != None:
+            try:
+                client.login(credentials['login'], credentials['password'])
+            except docker.errors.APIError as excep:
+                log.error('Cannot login: '+str(excep))
+                exit(1)
+            log.success('Logged in as '+credentials['login'])
+
         log.success('Pushing image')
         for line in client.push(rep, stream=True):
             _show_docker_progress(json.loads(line.decode()))
@@ -638,6 +640,8 @@ class PYVSProject(object):
 
     def login(self):
         ioutils.ask_logins()
+
+        
 
     # PRINT INFOS #
 
