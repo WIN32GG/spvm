@@ -25,11 +25,12 @@ def call_with_stdout(args, ignore_err=False,
     with Popen(args.split(' ') if type(args) == str else args, stdout=stdout, stdin=PIPE if inp is not None else None, stderr=stderr) as proc:
         out, err = proc.communicate(input=inp)
         if proc.poll() != 0 and not ignore_err:
-            # log.error('Error from subprocess')
-            # if err is not None and err != '':
-            #     print('err: ' + str(err), file=sys.stderr)
-            # if out is not None and out != '':
-            #     print('out: ' + str(out), file=sys.stderr)
+            if log.get_verbose():
+                log.error('Error from subprocess')
+                if err is not None and err != '':
+                    print('err: ' + str(err), file=sys.stderr)
+                if out is not None and out != '':
+                    print('out: ' + str(out), file=sys.stderr)
             raise CalledProcessError(proc.poll(), args, out, err)
         if log.get_verbose():
             log.debug('Output of '+repr(args))
@@ -48,14 +49,13 @@ def read_logins():
 
         cr = None
         with open('.logins', 'r') as fh:
-            cr = json.loads(fh.read())
+            cr = fh.read()
 
-        log.success(Fore.GREEN+config.OPEN_PADLOCK+' Unlocking logins'+Fore.RESET)
-        v = gpg.decrypt(cr.data)
-        cr['data'] = v
-        log.success(Fore.GREEN+'Got logins for '+' '.join(v)+Fore.RESET)
+        cr = json.loads(gpg.decrypt(cr).data)
+        log.success('Logins creation time: '+cr['creation_date'])
+        log.success(Fore.GREEN+config.OPEN_PADLOCK+' Got logins for '+', '.join(cr['data'])+Fore.RESET)
         
-        return NoFailReadOnlyDict(cr, default = None)
+        return NoFailReadOnlyDict(cr['data'], default = None)
     return None
 
 def get_date(): 
@@ -73,7 +73,7 @@ def ask_logins():
         'data': {}
     }
 
-    print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+    print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     print(Fore.YELLOW+'\tLogins configuration\n'+Fore.RESET)
     print(Fore.GREEN+'You are going to be asked you credentials for this project\n'
           +'They will be stored under .logins crypted with AES and .logins append to .gitignore'+Fore.RESET)
@@ -93,6 +93,16 @@ def ask_logins():
         password = getpass.getpass()
         arr[component] = {'login': login, 'password': password}
     
+    
+    # print(Fore.RED+'Git login: '+Fore.CYAN+' Git login will no be asked, you are expected to use a credential helper for git '
+    # +'if you wish to automatically push'+Fore.RESET)
+    # print(Fore.GREEN+'This setup can launch the git credential helper for you <3'
+    # +'\n'+Fore.YELLOW+'WARNING: The credentials are stored in clear text'+Fore.RESET)
+    # yes = input('Save git credentials? (Enter "yes" to continue): ')
+    # if yes == 'yes':
+    #     call_git('config credential.helper store')
+    #     call_git('push')
+
     ask_login(cr['data'], 'git')
     ask_login(cr['data'], 'pypi')
     ask_login(cr['data'], 'docker')
@@ -270,7 +280,12 @@ def call_pytest(args):
 
 @log.clear()
 def call_git(args):
-    return call_with_stdout('git ' + args)
+    if type(args) == str:
+        args = 'git '+args
+    else: # array
+        args = ['git', *args]
+
+    return call_with_stdout(args)
 
 
 @log.element('Commiting', log_entry=True)

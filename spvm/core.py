@@ -6,6 +6,7 @@ from colorama import Fore
 import subprocess
 from time import sleep
 from shutil import rmtree
+import urllib.parse
 import docker
 from threading import Thread
 import re
@@ -458,16 +459,29 @@ class PYVSProject(object):
 
         log.success('Tagged: ' + tag)
 
-        # Login
-        if credentials != None:
-            pass
+        try:
 
-        # Push
-        log.success('Pushing to ' + self.meta['project_vcs']['code_repository'])
-        ioutils.call_git('push --signed=if-asked')
-        log.success('Pushing tags')
-        ioutils.call_git('push --tags --signed=if-asked')
+            # Login
+            if credentials != None:
+                log.fine('Setting git credentials to temporary file')    
+                u = urllib.parse.urlparse(self.meta['project_vcs']['code_repository'])
+                with open('.git-credentials', 'w+') as fh:
+                    fh.write(u.scheme+'://'+credentials['login']+':'+credentials['password']+'@'+u.hostname+'\n')
+                ioutils.call_git(['config', 'credential.helper', 'store --file .git-credentials', '--add'])
+                log.success('Credentials are set')
 
+            # Push
+            repo = self.meta['project_vcs']['code_repository']
+            log.success('Pushing to ' + repo)
+            ioutils.call_git('push ' + repo + ' --signed=if-asked')
+            log.success('Pushing tags')
+            ioutils.call_git('push ' + repo + ' --tags --signed=if-asked')
+        finally:
+            if credentials != None:
+                os.remove('.git-credentials')
+                log.success('Removed temporary credential file')
+
+    
     @log.element('Package Release', log_entry=True)
     def _release_pypi(self, sign=True, credentials = None):
         # 🔒 🔐 🔏 🔓
