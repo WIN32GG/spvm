@@ -29,10 +29,7 @@ def check_project_meta(meta):
         for t_elem in template_elem:
             if t_elem not in meta_elem:
                 meta_elem[t_elem] = template_elem[t_elem]
-                log.warning(
-                    'Added ' +
-                    t_elem +
-                    ' to your project meta with default value')
+                log.warning('Added ' + t_elem + ' to your project meta with default value')
             else:
                 if isinstance(template_elem[t_elem], type({})):
                     rec_check_meta(meta_elem[t_elem], template_elem[t_elem])
@@ -121,47 +118,34 @@ def prompt_project_info(location, meta=get_default_template()):
 
     print(f'\n{Fore.GREEN}~~~~ Project Setup ~~~~{Fore.RESET}')
     print(f'{Fore.LIGHTGREEN_EX}Project Location: {location}{Fore.RESET}')
-    print(
-        f'Enter {Fore.RED}null{Fore.RESET} or {Fore.RED}none{Fore.RESET} to leave a field blank\n')
+    print(f'Enter {Fore.RED}null{Fore.RESET} or {Fore.RED}none{Fore.RESET} to leave a field blank\n')
 
     print(f'{Fore.CYAN}1/4:{Fore.LIGHTBLUE_EX} Project Info {Fore.RESET}')
-    meta['project_info']['name'] = input_with_default(
-        'Project Name', meta['project_info']['name'])
-    meta['project_info']['description'] = input_with_default(
-        'Project Description', meta['project_info']['description'])
-    meta['project_info']['license'] = input_with_default(
-        'Project License', meta['project_info']['license'])
-    meta['project_info']['url'] = input_with_default(
-        'Project URL', meta['project_info']['url'])
+    meta['project_info']['name'] = input_with_default('Project Name', meta['project_info']['name'])
+    meta['project_info']['description'] = input_with_default('Project Description', meta['project_info']['description'])
+    meta['project_info']['license'] = input_with_default('Project License', meta['project_info']['license'])
+    meta['project_info']['url'] = input_with_default('Project URL', meta['project_info']['url'])
 
     print(f'{Fore.CYAN}2/4:{Fore.LIGHTBLUE_EX} Project Author {Fore.RESET}')
-    meta['project_authors'][0]['name'] = input_with_default(
-        'Name', meta['project_authors'][0]['name'])
-    meta['project_authors'][0]['url'] = input_with_default(
-        'URL', meta['project_authors'][0]['url'])
-    meta['project_authors'][0]['email'] = input_with_default(
-        'Email', meta['project_authors'][0]['email'])
+    meta['project_authors'][0]['name'] = input_with_default('Name', meta['project_authors'][0]['name'])
+    meta['project_authors'][0]['url'] = input_with_default('URL', meta['project_authors'][0]['url'])
+    meta['project_authors'][0]['email'] = input_with_default('Email', meta['project_authors'][0]['email'])
     print(f'{Fore.LIGHTGREEN_EX}Note that you can add more authors in the project {metaFileName} later{Fore.RESET}')
 
     print(f'{Fore.CYAN}3/4:{Fore.LIGHTBLUE_EX} Project Version Control {Fore.RESET}')
-    meta['project_vcs']['code_repository'] = input_with_default(
-        'Code Repo', meta['project_vcs']['code_repository'])
+    meta['project_vcs']['code_repository'] = input_with_default('Code Repo', meta['project_vcs']['code_repository'])
     print(f'{Fore.GREEN}SPVM does not upload to Docker by default, add a repository to upload to\nand spvm will generate a generic Dockerfile{Fore.RESET}')
-    meta['project_vcs']['docker_repository'] = input_with_default(
-        'Docker Repo',
-        meta['project_vcs']['docker_repository'])  # f'{getpass.getuser()}/{meta.project_info.name}'
+    meta['project_vcs']['docker_repository'] = input_with_default('Docker Repo', meta['project_vcs']['docker_repository'])  # f'{getpass.getuser()}/{meta.project_info.name}'
     print(f'{Fore.GREEN}SPVM does not upload to PyPi by default use: {Fore.CYAN}https://upload.pypi.org/legacy/{Fore.GREEN} as a pypi_repo to enable it (or use your own ;) ){Fore.RESET}')
-    meta['project_vcs']['pypi_repository'] = input_with_default(
-        'PyPi Repo', meta['project_vcs']['pypi_repository'])
-    meta['project_vcs']['version'] = input_with_default(
-        'Current Version', meta['project_vcs']['version'])
+    meta['project_vcs']['pypi_repository'] = input_with_default('PyPi Repo', meta['project_vcs']['pypi_repository'])
+    meta['project_vcs']['version'] = input_with_default('Current Version', meta['project_vcs']['version'])
 
     print(f'{Fore.CYAN}4/4:{Fore.LIGHTBLUE_EX}Project Requirements{Fore.RESET}')
-    meta['project_requirements']['python_version'] = input_with_default(
-        'Python Version', meta['project_requirements']['python_version'])
+    meta['project_requirements']['python_version'] = input_with_default('Python Version', meta['project_requirements']['python_version'])
     dep = meta['project_requirements']['python_packages']
     print(f'{Fore.GREEN}Current dependencies: {" ".join(dep)}{Fore.RESET}')
     print(f'{Fore.GREEN}Add 1 dependency at a time and press Enter\nLeave blank to finish{Fore.RESET}')
+
     while True:
         tmp = input_with_default('Dependency', '')
         if tmp == '':
@@ -209,11 +193,7 @@ def load_version_from_file(location, project_name):
             exec(content, loaded_vfile)
             if loaded_vfile['__version__']:
                 default_version = loaded_vfile['__version__']
-                log.success(
-                    "Found version " +
-                    default_version +
-                    " for project " +
-                    project_name)
+                log.success("Found version " + default_version + " for project " + project_name)
     except BaseException as ex:
         log.error('Could not load file version: ' + ex.__class__.__name__)
 

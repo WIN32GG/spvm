@@ -9,6 +9,11 @@ from colorama import Fore
 import hashlib
 from os.path import join
 import fnmatch
+import gnupg
+import json
+import getpass
+from .config import NoFailReadOnlyDict
+from datetime import datetime
 
 from . import config
 
@@ -20,12 +25,14 @@ def call_with_stdout(args, ignore_err=False,
     with Popen(args.split(' ') if type(args) == str else args, stdout=stdout, stdin=PIPE if inp is not None else None, stderr=stderr) as proc:
         out, err = proc.communicate(input=inp)
         if proc.poll() != 0 and not ignore_err:
-            log.error('Error from subprocess')
-            if err is not None and err != '':
-                print('err: ' + str(err), file=sys.stderr)
-            if out is not None and out != '':
-                print('out: ' + str(out), file=sys.stderr)
-            raise CalledProcessError(proc.poll(), args)
+            if log.get_verbose():
+                log.error('Error from subprocess')
+                if err is not None and err != '':
+                    print('err: ' + str(err), file=sys.stderr)
+                if out is not None and out != '':
+                    print('out: ' + str(out), file=sys.stderr)
+            raise CalledProcessError(proc.poll(), args, out, err)
+
         if log.get_verbose():
             log.debug('Output of '+repr(args))
             if out is not None:
@@ -36,6 +43,85 @@ def call_with_stdout(args, ignore_err=False,
         if out is not None:
             return out.decode()
 
+def read_logins():
+    if os.path.isfile('.logins'):
+        log.success(Fore.GREEN+config.PADLOCK+" Found crypted logins file"+Fore.RESET)
+        gpg = gnupg.GPG()
+
+        cr = None
+        with open('.logins', 'r') as fh:
+            cr = fh.read()
+        crypt = gpg.decrypt(cr)
+
+        if not crypt.ok:
+            log.error(Fore.RED + config.PADLOCK + 'Could not unlock the logins file'+Fore.RESET)
+            raise ValueError('Could not uncrypt the login file')
+
+        cr = json.loads(crypt.data)
+        log.success('Logins creation time: '+cr['creation_date'])
+        log.success(Fore.GREEN+config.OPEN_PADLOCK+' Got logins for '+', '.join(cr['data'])+Fore.RESET)
+        
+        return NoFailReadOnlyDict(cr['data'], default = None)
+    return None
+
+def get_date(): 
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+def ask_logins():
+    if os.path.isfile('.logins'):
+        log.warning(Fore.YELLOW+'The logins file already exist, overwrite it ?'+Fore.RESET)
+        yes = input('Enter \'yes\' to overwrite: ')
+        if yes != 'yes':
+            return
+
+    cr = {
+        'creation_date': get_date(),
+        'data': {}
+    }
+
+    print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+    print(Fore.YELLOW+'\tLogins configuration\n'+Fore.RESET)
+    print(Fore.GREEN+'You are going to be asked you credentials for this project\n'
+          +'They will be stored under .logins crypted with AES and .logins append to .gitignore'+Fore.RESET)
+          
+    yes = input('Do you wish to continue? (Enter "yes" to continue): ')
+    if yes != 'yes':
+        log.error('Cancelled')
+        return
+    print('')
+
+    def ask_login(arr, component):
+        print(Fore.LIGHTGREEN_EX+'\nNow configuring login for: '+Fore.GREEN+component)
+        print(Fore.RED+"Leave blank if Not Applicable"+Fore.RESET)
+        login = input('Login: ')
+        if login == '':
+            return
+        password = getpass.getpass()
+        arr[component] = {'login': login, 'password': password}
+    
+    
+    # print(Fore.RED+'Git login: '+Fore.CYAN+' Git login will no be asked, you are expected to use a credential helper for git '
+    # +'if you wish to automatically push'+Fore.RESET)
+    # print(Fore.GREEN+'This setup can launch the git credential helper for you <3'
+    # +'\n'+Fore.YELLOW+'WARNING: The credentials are stored in clear text'+Fore.RESET)
+    # yes = input('Save git credentials? (Enter "yes" to continue): ')
+    # if yes == 'yes':
+    #     call_git('config credential.helper store')
+    #     call_git('push')
+
+    ask_login(cr['data'], 'git')
+    ask_login(cr['data'], 'pypi')
+    ask_login(cr['data'], 'docker')
+
+    gpg = gnupg.GPG()
+    gpg.encrypt(json.dumps(cr), (), symmetric=True, output='.logins')
+
+    try:
+        call_git('check-ignore .logins')
+    except CalledProcessError:
+        with open('.gitignore', 'a') as fh:
+            fh.write('\.logins')
+        log.success('Appened .logins to .gitignore')
 
 def call_python(module, args, stdout=None, stderr=None):
     mod = [] if module == '' else ['-m', module]
@@ -71,7 +157,9 @@ def install_packages(args, check_signatures=None):
 
     @log.element('Download Packages', log_entry=True)
     def download():
-        call_pip('download -d ' + piptmp + ' ' + args)
+        for pack in args.split(' '):
+            log.set_additional_info(pack)
+            call_pip('download -d ' + piptmp + ' ' + pack)
 
     @log.element('Checking Packages')
     def check_packages(base_url='https://pypi.python.org/pypi/'):
@@ -79,18 +167,17 @@ def install_packages(args, check_signatures=None):
         unchecked = 0
         for f in os.listdir(piptmp):
             try:
+                log.set_additional_info(f)
                 f_ = piptmp + os.sep + f
                 if not os.path.isfile(f_):
                     continue
 
                 splited = f.split('-')
                 log.debug('Checking ' + splited[0])
-                package_info = query_get(
-                    base_url + splited[0] + '/' + splited[1] + '/json')
+                package_info = query_get(base_url + splited[0] + '/' + splited[1] + '/json')
 
                 for f_info in package_info['releases'][splited[1]]:
-                    if not os.path.isfile(os.path.join(
-                            piptmp, f_info['filename'])):
+                    if not os.path.isfile(os.path.join(piptmp, f_info['filename'])):
                         continue
 
                     if md5(f_) != f_info['md5_digest']:
@@ -99,65 +186,36 @@ def install_packages(args, check_signatures=None):
                     # log.success(Fore.GREEN+'Hash checked for '+f)
 
                     if not f_info['has_sig']:
-                        log.debug(
-                            Fore.YELLOW +
-                            'No signature provided for ' +
-                            f_info['filename'])  # FIXME throw?
+                        log.debug(Fore.YELLOW + 'No signature provided for ' + f_info['filename'])  # FIXME throw?
                         unchecked += 1
                         continue
 
                     sig = query_get(f_info['url'] + '.asc', False)
-                    log.debug(
-                        'File: ' +
-                        f_info['filename'] +
-                        ' has signature:\n ' +
-                        sig.decode())
+                    log.debug('File: ' + f_info['filename'] + ' has signature:\n ' + sig.decode())
 
                     # Check
                     q = '' if log.get_verbose() else ' --quiet'
                     try:
-                        call_gpg(
-                            '--no-default-keyring --keyring tmp.gpg' +
-                            q +
-                            ' --auto-key-retrieve --verify - ' +
-                            f_,
-                            inp=sig)  # FIXME Only use known keys?
+                        call_gpg('--no-default-keyring --keyring tmp.gpg' + q + ' --auto-key-retrieve --verify - ' + f_, inp=sig)  # FIXME Only use known keys?
                     except CalledProcessError as er:
                         if er.returncode == 1:
-                            log.error(
-                                Fore.RED +
-                                config.OPEN_PADLOCK +
-                                ' Invalid signature for ' +
-                                f)
+                            log.error(Fore.RED + config.OPEN_PADLOCK + ' Invalid signature for ' + f)
                             exit(1)
-                        log.error(
-                            'Could not check signature for ' + f + ' (' + repr(er) + ')')
+
+                        log.error('Could not check signature for ' + f + ' (' + repr(er) + ')')
                         unchecked += 1
                         continue
 
-                    log.success(
-                        Fore.GREEN +
-                        config.PADLOCK +
-                        ' File ' +
-                        f +
-                        ' is verified')
+                    log.success(Fore.GREEN + config.PADLOCK + ' File ' + f + ' is verified')
 
             except KeyboardInterrupt:
                 exit(2)
             except SystemExit as e:
                 raise e
             except BaseException as be:
-                log.error(
-                    Fore.RED +
-                    config.OPEN_PADLOCK +
-                    ' Failed to check ' +
-                    f +
-                    Fore.RESET)
+                log.error(Fore.RED + config.OPEN_PADLOCK + ' Failed to check ' + f + Fore.RESET)
                 log.error(repr(be))
-        log.warning(
-            Fore.YELLOW +
-            str(unchecked) +
-            ' file(s) could not be verified')
+        log.warning(Fore.YELLOW + str(unchecked) + ' file(s) could not be verified')
 
     def clearup():
         shutil.rmtree(piptmp, True)
@@ -167,8 +225,9 @@ def install_packages(args, check_signatures=None):
     def install():
         for f in os.listdir(piptmp):
             if f.endswith('.whl'):
+                log.set_additional_info(f)
                 call_pip('install ' + piptmp + os.path.sep + f)
-                log.success('Installed ' + f.split('-')[0])
+                # log.success('Installed ' + f.split('-')[0])
 
     clearup()
     download()
@@ -196,7 +255,12 @@ def call_pytest(args):
 
 @log.clear()
 def call_git(args):
-    return call_with_stdout('git ' + args)
+    if type(args) == str:
+        args = 'git '+args
+    else: # array
+        args = ['git', *args]
+
+    return call_with_stdout(args)
 
 
 @log.element('Commiting', log_entry=True)
@@ -219,12 +283,13 @@ def md5(fname):
 
 
 def call_gpg(args, inp=None, verbose=log.get_verbose()):
+    log.error('Call to gpg deprecated')
     fh = PIPE if verbose else FNULL
     return call_with_stdout('gpg ' + args, inp=inp, stdout=fh, stderr=fh)
 
 
 def call_twine(args):
-    return call_with_stdout('twine ' + args, stdout=None)
+    return call_with_stdout('twine ' + args, stdout=None) # FIXME import and use
 
 
 @log.element('Checking code', log_entry=False)
@@ -242,6 +307,7 @@ def call_check(args, ignore="", exclude=''):
             if not f.endswith('.py'):
                 continue
             log.debug('Check: '+f)
+            log.set_additional_info(f)
             if match_gitignore(join(dirname, f), exclude):
                 continue 
             

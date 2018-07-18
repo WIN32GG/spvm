@@ -22,8 +22,8 @@ config = {
 
 
 class NoFailReadOnlyDict(object):
-    def __init__(self, dict, default=''):
-        self.dict = dict
+    def __init__(self, d, default=''):
+        self.dict = d
         self.default = default
 
     def __getitem__(self, key):
@@ -35,8 +35,8 @@ class NoFailReadOnlyDict(object):
     def __setitem__(self, key, value):
         raise AttributeError("This dictionary is read only")
 
-    def __getattribute__(self, name):
-        raise AttributeError("Cannot access attributes")
+    # def __getattribute__(self, name):
+    #     raise AttributeError("Cannot access attributes")
 
-    def __setattr__(self, name, value):
-        raise AttributeError("Cannot set attributes")
+    # def __setattr__(self, name, value):
+    #     raise AttributeError("Cannot set attributes")

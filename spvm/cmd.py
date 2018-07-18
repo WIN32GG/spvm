@@ -46,6 +46,11 @@ def cli(verbose, mock, signed, repair, nocheck, update, notest, yes):
     core.check_script_version()
 
 @cli.command()
+@click.argument('projectname', default=".")
+def login(projectname):
+    get_project(projectname).login()
+
+@cli.command()
 @click.argument('scriptname', default="default")
 @click.argument('projectname', default=".")
 def run(scriptname, projectname):
