@@ -51,8 +51,13 @@ def read_logins():
         cr = None
         with open('.logins', 'r') as fh:
             cr = fh.read()
+        crypt = gpg.decrypt(cr)
 
-        cr = json.loads(gpg.decrypt(cr).data)
+        if not crypt.ok:
+            log.error(Fore.RED + config.PADLOCK + 'Could not unlock the logins file'+Fore.RESET)
+            raise ValueError('Could not uncrypt the login file')
+
+        cr = json.loads(crypt.data)
         log.success('Logins creation time: '+cr['creation_date'])
         log.success(Fore.GREEN+config.OPEN_PADLOCK+' Got logins for '+', '.join(cr['data'])+Fore.RESET)
         
