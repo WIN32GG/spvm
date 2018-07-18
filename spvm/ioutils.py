@@ -32,6 +32,7 @@ def call_with_stdout(args, ignore_err=False,
                 if out is not None and out != '':
                     print('out: ' + str(out), file=sys.stderr)
             raise CalledProcessError(proc.poll(), args, out, err)
+
         if log.get_verbose():
             log.debug('Output of '+repr(args))
             if out is not None:
@@ -168,12 +169,10 @@ def install_packages(args, check_signatures=None):
 
                 splited = f.split('-')
                 log.debug('Checking ' + splited[0])
-                package_info = query_get(
-                    base_url + splited[0] + '/' + splited[1] + '/json')
+                package_info = query_get(base_url + splited[0] + '/' + splited[1] + '/json')
 
                 for f_info in package_info['releases'][splited[1]]:
-                    if not os.path.isfile(os.path.join(
-                            piptmp, f_info['filename'])):
+                    if not os.path.isfile(os.path.join(piptmp, f_info['filename'])):
                         continue
 
                     if md5(f_) != f_info['md5_digest']:
@@ -182,65 +181,36 @@ def install_packages(args, check_signatures=None):
                     # log.success(Fore.GREEN+'Hash checked for '+f)
 
                     if not f_info['has_sig']:
-                        log.debug(
-                            Fore.YELLOW +
-                            'No signature provided for ' +
-                            f_info['filename'])  # FIXME throw?
+                        log.debug(Fore.YELLOW + 'No signature provided for ' + f_info['filename'])  # FIXME throw?
                         unchecked += 1
                         continue
 
                     sig = query_get(f_info['url'] + '.asc', False)
-                    log.debug(
-                        'File: ' +
-                        f_info['filename'] +
-                        ' has signature:\n ' +
-                        sig.decode())
+                    log.debug('File: ' + f_info['filename'] + ' has signature:\n ' + sig.decode())
 
                     # Check
                     q = '' if log.get_verbose() else ' --quiet'
                     try:
-                        call_gpg(
-                            '--no-default-keyring --keyring tmp.gpg' +
-                            q +
-                            ' --auto-key-retrieve --verify - ' +
-                            f_,
-                            inp=sig)  # FIXME Only use known keys?
+                        call_gpg('--no-default-keyring --keyring tmp.gpg' + q + ' --auto-key-retrieve --verify - ' + f_, inp=sig)  # FIXME Only use known keys?
                     except CalledProcessError as er:
                         if er.returncode == 1:
-                            log.error(
-                                Fore.RED +
-                                config.OPEN_PADLOCK +
-                                ' Invalid signature for ' +
-                                f)
+                            log.error(Fore.RED + config.OPEN_PADLOCK + ' Invalid signature for ' + f)
                             exit(1)
-                        log.error(
-                            'Could not check signature for ' + f + ' (' + repr(er) + ')')
+
+                        log.error('Could not check signature for ' + f + ' (' + repr(er) + ')')
                         unchecked += 1
                         continue
 
-                    log.success(
-                        Fore.GREEN +
-                        config.PADLOCK +
-                        ' File ' +
-                        f +
-                        ' is verified')
+                    log.success(Fore.GREEN + config.PADLOCK + ' File ' + f + ' is verified')
 
             except KeyboardInterrupt:
                 exit(2)
             except SystemExit as e:
                 raise e
             except BaseException as be:
-                log.error(
-                    Fore.RED +
-                    config.OPEN_PADLOCK +
-                    ' Failed to check ' +
-                    f +
-                    Fore.RESET)
+                log.error(Fore.RED + config.OPEN_PADLOCK + ' Failed to check ' + f + Fore.RESET)
                 log.error(repr(be))
-        log.warning(
-            Fore.YELLOW +
-            str(unchecked) +
-            ' file(s) could not be verified')
+        log.warning(Fore.YELLOW + str(unchecked) + ' file(s) could not be verified')
 
     def clearup():
         shutil.rmtree(piptmp, True)

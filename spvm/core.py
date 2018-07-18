@@ -43,10 +43,7 @@ class PYVSProject(object):
         Guess project meta and asks for correction, write in metaFile
         """
         os.makedirs(join(self.location, 'test'), exist_ok=True)
-        os.makedirs(join(
-                    self.location,
-                    os.path.basename(self.location).lower()),
-            exist_ok=True)
+        os.makedirs(join(self.location, os.path.basename(self.location).lower()), exist_ok=True)
 
         self.meta = metautils.detect_project_meta(self.location)
         # self.print_project_meta()
@@ -54,8 +51,7 @@ class PYVSProject(object):
             metautils.prompt_project_info(self.location, self.meta)
             self.print_project_meta()
 
-            if metautils.input_with_default(
-                    f'{Fore.CYAN}Is this correct? {Fore.RESET}[y/n]') in ('y', 'Y', '1', 'yes', 'Yes'):
+            if metautils.input_with_default(f'{Fore.CYAN}Is this correct? {Fore.RESET}[y/n]') in ('y', 'Y', '1', 'yes', 'Yes'):
                 break
 
         self.save_project_info()
@@ -86,8 +82,7 @@ class PYVSProject(object):
         Reported problems are in the 2 returned arrays
         """
 
-        flakes, pep = ioutils.call_check(
-            self.location, ignore=self.meta['project_vcs']['ignored_errors'], exclude=self.gitignore)
+        flakes, pep = ioutils.call_check(self.location, ignore=self.meta['project_vcs']['ignored_errors'], exclude=self.gitignore)
 
         flakes = flakes.split('\n')[:-1]
         pep = pep.split('\n')[:-1]
@@ -103,8 +98,7 @@ class PYVSProject(object):
         except CalledProcessError as ex:
             if ex.returncode == 5:
                 log.warning('No tests were found')
-                log.warning(
-                    'This is not considered fatal but is VERY STRONGLY discouraged')
+                log.warning('This is not considered fatal but is VERY STRONGLY discouraged')
                 log.warning('Resuming in 2 seconds')
                 sleep(2)
                 return
@@ -131,8 +125,7 @@ class PYVSProject(object):
         - Local or remote source archives.
         """
         if self.get_project_status() != config.STATUS_PROJECT_INITIALIZED:
-            log.error(
-                "The project is not initialized, call spvm init first before adding dependencies")
+            log.error("The project is not initialized, call spvm init first before adding dependencies")
             return
 
         # if os.path.isdir(dep):
@@ -188,23 +181,10 @@ class PYVSProject(object):
 
         if already_present:
             log.fine('Creating setup.py.backup')
-            ioutils.copy(
-                join(
-                    self.location,
-                    'setup.py'),
-                join(
-                    self.location,
-                    'setup.py.backup'))
+            ioutils.copy(join(self.location, 'setup.py'), join(self.location, 'setup.py.backup'))
 
         log.success('Copying seyup.py from template')
-        ioutils.copy(
-            join(
-                os.path.dirname(__file__),
-                'res',
-                'setup.py'),
-            join(
-                self.location,
-                'setup.py'))
+        ioutils.copy(join(os.path.dirname(__file__), 'res', 'setup.py'), join(self.location, 'setup.py'))
 
     @log.no_spinner()
     @log.element('Update project dependencies', log_entry=True)
@@ -218,9 +198,7 @@ class PYVSProject(object):
         #         self.meta['project_requirements']['python_packages']) +
         #     " --upgrade")
 
-        ioutils.install_packages(
-            " ".join(
-                self.meta['project_requirements']['python_packages']))
+        ioutils.install_packages(" ".join(self.meta['project_requirements']['python_packages']))
 
     def up_version(self, kind):  # FIXME other to 0
         """
@@ -440,8 +418,7 @@ class PYVSProject(object):
     @log.element('Git Publishing', log_entry=True)
     def _release_git(self, credentials = None):
         # Commit version
-        commit_message = self.meta['project_vcs']['release']['commit_template'].replace(
-             '%s', self.meta['project_vcs']['version']).replace('"', '\\"').strip()
+        commit_message = self.meta['project_vcs']['release']['commit_template'].replace('%s', self.meta['project_vcs']['version']).replace('"', '\\"').strip()
         log.debug('Commit message: ' + commit_message)
         ioutils.call_git('add .')
 
@@ -452,11 +429,8 @@ class PYVSProject(object):
         ioutils.call_commit(commit_message, key=key)
 
         # Tag version
-        tag = self.meta['project_vcs']['release']['tag_template'].replace(
-            '%s', self.meta['project_vcs']['version'])
-        ioutils.call_git('tag ' + ('' if key == '' else '-u ' + key + ' ') +
-                         '-m ' + tag + ' ' + tag)
-
+        tag = self.meta['project_vcs']['release']['tag_template'].replace('%s', self.meta['project_vcs']['version'])
+        ioutils.call_git('tag ' + ('' if key == '' else '-u ' + key + ' ') + '-m ' + tag + ' ' + tag)
         log.success('Tagged: ' + tag)
 
         try:
@@ -476,6 +450,7 @@ class PYVSProject(object):
             ioutils.call_git('push ' + repo + ' --signed=if-asked')
             log.success('Pushing tags')
             ioutils.call_git('push ' + repo + ' --tags --signed=if-asked')
+
         finally:
             if credentials != None:
                 os.remove('.git-credentials')
@@ -505,9 +480,7 @@ class PYVSProject(object):
         else:
             rep = self.meta['project_vcs']['pypi_repository']
         log.success('Uploading to ' + rep)
-        ioutils.call_twine('upload --repository-url ' + rep + ' ./build/dist/*' +
-                ('' if credentials == None else ' -u '+credentials['login']+ ' -p '+credentials['password'])
-            )
+        ioutils.call_twine('upload --repository-url ' + rep + ' ./build/dist/*' + ('' if credentials == None else ' -u '+credentials['login']+ ' -p '+credentials['password']))
 
     @log.element('Package Signing')
     def _sign_package(self):
@@ -516,10 +489,7 @@ class PYVSProject(object):
         """
         meta_key = self.meta['project_vcs']['release']['package_signing_key']
         if meta_key == '':
-            log.error(Fore.RED +
-                      config.OPEN_PADLOCK +
-                      ' No key provided for package signing' +
-                      Fore.RESET)
+            log.error(Fore.RED + config.OPEN_PADLOCK + ' No key provided for package signing' + Fore.RESET)
             return
 
         log.success('Signing the package with the key: ' + meta_key)
@@ -529,31 +499,18 @@ class PYVSProject(object):
                 for f in place[2]:
                     self._sign_file(join(place[0], f), meta_key)
         except CalledProcessError as ex:
-            log.error(
-                Fore.RED +
-                config.OPEN_PADLOCK +
-                ' Could not sign the package' +
-                Fore.RESET)
-            log.error(
-                'The program will now stop, you can resume with: spvm publish pypi')
+            log.error(Fore.RED + config.OPEN_PADLOCK + ' Could not sign the package' + Fore.RESET)
+            log.error('The program will now stop, you can resume with: spvm publish pypi')
             log.error('When the issues are fixed')
             log.error(repr(ex))
             exit(1)
             return
 
-        log.success(
-            Fore.GREEN +
-            config.PADLOCK +
-            ' Package Signed with key: ' +
-            meta_key +
-            Fore.RESET)
+        log.success(Fore.GREEN + config.PADLOCK + ' Package Signed with key: ' + meta_key + Fore.RESET)
 
     def _sign_file(self, file, meta_key):
-        ioutils.call_gpg(
-            ('-u ' + meta_key + ' ' if meta_key != '' else '') +
-            '-b --yes -a -o ' + file + '.asc ' + file)
+        ioutils.call_gpg(('-u ' + meta_key + ' ' if meta_key != '' else '') + '-b --yes -a -o ' + file + '.asc ' + file)
     
-
     @log.element('Docker Publishing', log_entry=True)
     def _release_docker(self, credentials = None):
         log.success('Building Docker Image')
@@ -566,12 +523,8 @@ class PYVSProject(object):
             nonlocal status
 
             if 'errorDetail' in obj:
-                log.error(Fore.RED +
-                          'Error: ' +
-                          str(obj['errorDetail']['message']) +
-                          Fore.RESET)
-                raise docker.errors.DockerException(
-                    obj['errorDetail']['message'])
+                log.error(Fore.RED + 'Error: ' + str(obj['errorDetail']['message']) + Fore.RESET)
+                raise docker.errors.DockerException(obj['errorDetail']['message'])
 
             if 'stream' in obj:
                 for line in obj['stream'].split('\n'):
@@ -587,10 +540,7 @@ class PYVSProject(object):
                     return
 
                 if len(status) == 0:
-                    print(
-                        Fore.GREEN +
-                        "\rA docker I/O operation is in progress" +
-                        Fore.RESET)
+                    print(Fore.GREEN + "\rA docker I/O operation is in progress" + Fore.RESET)
 
                 s = obj['id'].strip() + ' ' + obj['status'] + '\t'
                 if 'progress' in obj:
@@ -611,6 +561,7 @@ class PYVSProject(object):
         rep = self.meta['project_vcs']['docker_repository']
         log.success('Image repo: ' + rep)
         g = client.build(tag=rep, path='.', dockerfile='Dockerfile')
+
         for line in g:
             _show_docker_progress(json.loads(line.decode()))
 
@@ -667,12 +618,8 @@ class PYVSProject(object):
         p = nice_print_value
 
         p('     Version Info', kc=Fore.GREEN)
-        if not os.path.isdir(join(self.location, '.git')
-                             ) or ioutils.call_git('branch') == '':
-            print(
-                Fore.RED +
-                'No git repo initialized, versioning info not available' +
-                Fore.RESET)
+        if not os.path.isdir(join(self.location, '.git')) or ioutils.call_git('branch') == '':
+            print(Fore.RED + 'No git repo initialized, versioning info not available' + Fore.RESET)
             p('')
             return
 
@@ -697,6 +644,7 @@ class PYVSProject(object):
         p('Errors & Warnings:', str(len(flakes)), vc=vcf)
         p('Conformity Problems:', str(len(pep)), vc=vcp)
         p('')
+
         if show:
             p('Errors & Warnings', kc=Fore.LIGHTYELLOW_EX)
             if len(flakes) == 0:
@@ -713,23 +661,25 @@ class PYVSProject(object):
     def print_dependencies(self):
         p = nice_print_value
 
-        p('     Project Dependencies', '(' +
-          str(len(self.meta['project_requirements']['python_packages'])) +
-            ')', kc=Fore.GREEN)
+        p('     Project Dependencies', '(' + str(len(self.meta['project_requirements']['python_packages'])) + ')', kc=Fore.GREEN)
         for name in self.meta['project_requirements']['python_packages']:
             print(name)
+
         p('')
 
     @log.element(action='Calculating size...')
     def get_project_size(self):
         total_size = 0
         for dirpath, _, filenames in os.walk(self.location):
+
             if self.match_gitignore(dirpath):
                 log.debug('Ignored ' + dirpath)
                 continue
+
             for f in filenames:
                 fp = os.path.join(dirpath, f)
                 total_size += os.path.getsize(fp)
+
         return sizeof_fmt(total_size)
 
     def match_gitignore(self, name):
@@ -757,10 +707,7 @@ class PYVSProject(object):
         sts = self.get_project_status()
 
         if sts != config.STATUS_PROJECT_INITIALIZED:
-            print(
-                Fore.RED +
-                'Enable SPVM to print project status\nspvm init' +
-                Fore.RESET)
+            print(Fore.RED + 'Enable SPVM to print project status\nspvm init' + Fore.RESET)
             return
 
         nice_print_value('      Project Info', kc=Fore.GREEN)
@@ -815,12 +762,10 @@ def check_script_version():
         try:
             version = spvm.__version__
             log.debug("SPVM version " + str(version))
-            lastver = ioutils.query_get(
-                "https://pypi.org/pypi/spvm/json")['info']['version']
+            lastver = ioutils.query_get("https://pypi.org/pypi/spvm/json")['info']['version']
             log.debug('Last version is ' + lastver)
             if version != lastver:
-                log.warning("A new version of spvm is available (" +
-                            lastver + ") you have version " + version)
+                log.warning("A new version of spvm is available (" + lastver + ") you have version " + version)
                 log.warning("Run pip install spvm --upgrade")
         except BaseException:
             log.warning('Could not get last version')
