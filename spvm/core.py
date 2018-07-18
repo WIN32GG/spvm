@@ -560,7 +560,10 @@ class PYVSProject(object):
         # FIXME choose dockerfile
         rep = self.meta['project_vcs']['docker_repository']
         log.success('Image repo: ' + rep)
-        g = client.api.build(tag=rep, path='.', dockerfile='Dockerfile')
+        if hasattr(client, 'api'):
+            client = client.api
+
+        g = client.build(tag=rep, path='.', dockerfile='Dockerfile')
 
         for line in g:
             _show_docker_progress(json.loads(line.decode()))
@@ -578,7 +581,7 @@ class PYVSProject(object):
             log.success('Logged in as '+credentials['login'])
 
         log.success('Pushing image')
-        for line in client.api.push(rep, stream=True):
+        for line in client.push(rep, stream=True):
             _show_docker_progress(json.loads(line.decode()))
 
     def run(self, scriptname):
