@@ -48,12 +48,14 @@ def cli(verbose, mock, signed, repair, nocheck, update, notest, yes):
 @cli.command()
 @click.argument('projectname', default=".")
 def login(projectname):
+    """ Save your login info to a crypted file """
     get_project(projectname).login()
 
 @cli.command()
 @click.argument('scriptname', default="default")
 @click.argument('projectname', default=".")
 def run(scriptname, projectname):
+    """ Run a script defined in pyp.json """
     log.debug('Script from CLI: '+scriptname)
     get_project(projectname).run(scriptname)
 
