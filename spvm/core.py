@@ -341,9 +341,9 @@ class PYVSProject(object):
         YES = Fore.GREEN + 'YES' + Fore.RESET + MOCK
 
         publish_context = self.detect_publish_context()
-        pipeline.append(Fore.CYAN + "     - Git Publish: "    + (YES if publish_context[0] else NO))
-        pipeline.append(Fore.CYAN + "     - PyPi Publish: "   + (YES if publish_context[1] else NO))
-        pipeline.append(Fore.CYAN + "     - Docker Publish: " + (YES if publish_context[2] else NO))
+        pipeline.append(Fore.CYAN + "     - Git Publish:\t\t"    + (YES if publish_context[0] else NO))
+        pipeline.append(Fore.CYAN + "     - PyPi Publish:\t\t"   + (YES if publish_context[1] else NO))
+        pipeline.append(Fore.CYAN + "     - Docker Publish:\t"   + (YES if publish_context[2] else NO))
 
         log.success('Release pipeline is: ')
         for f in pipeline:
@@ -441,7 +441,7 @@ class PYVSProject(object):
                 u = urllib.parse.urlparse(self.meta['project_vcs']['code_repository'])
                 with open('.git-credentials', 'w+') as fh:
                     fh.write(u.scheme+'://'+credentials['login']+':'+credentials['password']+'@'+u.hostname+'\n')
-                ioutils.call_git(['config', 'credential.helper', 'store --file .git-credentials', '--add'])
+                ioutils.call_git(['config', 'credential.helper', 'store --file .git-credentials', '--replace-all'])
                 log.success('Credentials are set')
 
             # Push
