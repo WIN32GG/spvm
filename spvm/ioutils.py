@@ -42,7 +42,7 @@ def call_with_stdout(args, ignore_err=False,
 
         if out is not None:
             return out.decode()
-
+@log.clear()
 def read_logins():
     if os.path.isfile('.logins'):
         log.success(Fore.GREEN+config.PADLOCK+" Found crypted logins file"+Fore.RESET)
@@ -51,11 +51,17 @@ def read_logins():
         cr = None
         with open('.logins', 'r') as fh:
             cr = fh.read()
-        crypt = gpg.decrypt(cr)
+        
+        crypt = None
+        while True:
+            passphrase = getpass.getpass('Passphrase for login file: ')
+            crypt = gpg.decrypt(cr, passphrase = passphrase)
 
-        if not crypt.ok:
-            log.error(Fore.RED + config.PADLOCK + 'Could not unlock the logins file'+Fore.RESET)
-            raise ValueError('Could not uncrypt the login file')
+            if not crypt.ok:
+                log.error(Fore.RED + config.PADLOCK + 'Could not unlock the logins file, is the passphrase correct?'+Fore.RESET)
+                # raise ValueError('Could not uncrypt the login file')
+            else:
+                break
 
         cr = json.loads(crypt.data)
         log.success('Logins creation time: '+cr['creation_date'])
@@ -283,7 +289,7 @@ def md5(fname):
 
 
 def call_gpg(args, inp=None, verbose=log.get_verbose()):
-    log.error('Call to gpg deprecated')
+    # log.error('Call to gpg deprecated')
     fh = PIPE if verbose else FNULL
     return call_with_stdout('gpg ' + args, inp=inp, stdout=fh, stderr=fh)
 

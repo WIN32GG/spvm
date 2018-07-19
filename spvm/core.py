@@ -138,7 +138,7 @@ class PYVSProject(object):
         #     supp_args = '-r '
 
         try:
-            ioutils.install_packages(dep, True)
+            ioutils.install_packages(dep)
         except CalledProcessError as ex:
             log.error("Pip call failed with code " + str(ex.returncode))
             log.error("Does the dependency exist or is something broken?")
