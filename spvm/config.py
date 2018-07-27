@@ -18,6 +18,7 @@ OPEN_PADLOCK = '🔓'
 config = {
     'mock': False,
     'signed': False
+    #FIXME add other config (see cmd)
 }
 
 
