@@ -145,6 +145,7 @@ class PYVSProject(object):
             return
 
         self.meta['project_requirements']['python_packages'].append(dep)
+        self.save_project_info()
 
     def maybe_load_meta(self):
         """

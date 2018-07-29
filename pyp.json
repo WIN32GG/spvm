@@ -19,7 +19,7 @@
         "exclude_packages": [
             "test"
         ],
-        "version": "0.0.37",
+        "version": "0.0.38",
         "ignored_errors": "E121,E123,E126,E226,E24,E704,W503,W504,E501",
         "release": {
             "commit_template": "Inscreased version to %s",
@@ -41,8 +41,8 @@
             "twine",
             "splogger",
             "docker-py",
-            "python-gnupg",
-            "wrapt"
+            "wrapt",
+            "python-gnupg"
         ]
     },
     "scripts": {
