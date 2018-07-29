@@ -41,6 +41,7 @@
             "twine",
             "splogger",
             "docker-py",
+            "python-gnupg",
             "wrapt"
         ]
     },
