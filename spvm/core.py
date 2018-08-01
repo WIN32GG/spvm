@@ -418,6 +418,11 @@ class PYVSProject(object):
 
     @log.element('Git Publishing', log_entry=True)
     def _release_git(self, credentials = None):
+        if os.path.isfile('.git-credentials'):
+            os.remove('.git-credentials')
+            log.success('Removed dangling credential file')
+
+
         # Commit version
         commit_message = self.meta['project_vcs']['release']['commit_template'].replace('%s', self.meta['project_vcs']['version']).replace('"', '\\"').strip()
         log.debug('Commit message: ' + commit_message)
